@@ -3,12 +3,12 @@ A gradual WAM implementation in Clojure following Hassan Aït-Kaci's tutorial re
 
 ## Language ℒ₀
 
-### Exercise 2.1 (pg. 9)
+#### Exercise 2.1 (pg. 9)
 Verify that the effect of executing the sequence of instructions shown in Figure 2.3
 (starting with `H` = 0) does indeed yield a correct heap representation for the term
 _p(Z, h(Z, W), f(W))_ — the one shown earlier as Figure 2.1, in fact.
 
-See [ℳ₀ machine instructions]() for implementation details
+See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/master/L0/src/wam/l0/instruction_set.clj) for implementation details
 
 ```clojure
   (use '[table.core :only [table]])
@@ -34,7 +34,7 @@ See [ℳ₀ machine instructions]() for implementation details
 ```
 
 Produces:
-
+```
    +-----+---------+
    | key | value   |
    +-----+---------+
@@ -51,7 +51,7 @@ Produces:
    | 10  | [STR 1] |
    | 11  | [STR 5] |
    +-----+---------+
-
+```
 TBC...
 
 ## Language ℒ₁
