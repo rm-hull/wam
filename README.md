@@ -11,7 +11,8 @@ _p(Z, h(Z, W), f(W))_ — the one shown earlier as Figure 2.1, in fact.
 See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/master/L0/src/wam/l0/instruction_set.clj) for implementation details
 
 ```clojure
-  (use '[table.core :only [table]])
+  (use 'wam.l0.instruction-set)
+  (use 'table.core)
   
   (def context {
     :pointer {:h 0}
@@ -53,6 +54,52 @@ Produces:
    +-----+---------+
 ```
 TBC...
+
+### EBNF ℒ₀ Grammar & Parser Combinators
+
+The simplistic EBNF grammar rules for ℒ₀ below have been implemented using a 
+[parser monad](https://github.com/rm-hull/wam/blob/master/L0/src/wam/l0/parser.clj).
+
+* _**<Digit>** ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'_
+
+* _**<Number>** ::= <Digit> <Digit>*_
+
+* _**<LowerAlpha>** ::= 'a' .. 'z'_
+
+* _**<UpperAlpha>** ::= 'A' .. 'Z'_
+
+* _**<AlphaNum>** ::= <LowerAlpha> | <UpperAlpha> | <Digit>_
+
+* _**<Predicate>** ::= <LowerAlpha> | <AlphaNum>*_
+
+* _**<Constant>** ::= <Predicate> | <Number>_
+
+* _**<Variable>** ::= <UpperAlpha> <AlphaNum>* | '_'_
+
+* _**<Structure>** ::= <Predicate> '(' <List> ')'_
+
+* _**<List>** ::= <Element> | <Element> ',' <List>_
+
+* _**<Element>** ::= <Variable> | <Constant> | <Structure>_
+
+Parsing the term _p(Z, h(Z, W), f(W))_ with:
+
+'''clojure
+(use 'wam.l0.grammar)
+(parse-all structure "p(Z, h(Z, W), f(W))")
+'''
+
+yields:
+
+'''
+#Structure{:functor p|3, 
+           :args (#Variable{:name Z} 
+                  #Structure{:functor h|2, 
+                             :args (#Variable{:name Z} 
+                                    #Variable{:name W}})} 
+                  #Structure{:functor f|1, 
+                             :args (#Variable{:name W})})}
+'''
 
 ## Language ℒ₁
 
