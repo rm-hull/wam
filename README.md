@@ -57,41 +57,41 @@ TBC...
 
 ### EBNF ℒ₀ Grammar & Parser Combinators
 
-The simplistic EBNF grammar rules for ℒ₀ below have been implemented using a 
-[parser monad](https://github.com/rm-hull/wam/blob/master/L0/src/wam/l0/parser.clj).
+The simplistic EBNF [grammar rules](https://github.com/rm-hull/wam/blob/master/L0/src/wam/l0/grammar.clj) 
+for ℒ₀ below have been implemented using a [parser monad](https://github.com/rm-hull/wam/blob/master/L0/src/wam/l0/parser.clj).
 
-* _**<Digit>** ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'_
+* _**&lt;Digit&gt;** ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'_
 
-* _**<Number>** ::= <Digit> <Digit>*_
+* _**&lt;Number&gt;** ::= &lt;Digit&gt; &lt;Digit&gt;*_
 
-* _**<LowerAlpha>** ::= 'a' .. 'z'_
+* _**&lt;LowerAlpha&gt;** ::= 'a' .. 'z'_
 
-* _**<UpperAlpha>** ::= 'A' .. 'Z'_
+* _**&lt;UpperAlpha&gt;** ::= 'A' .. 'Z'_
 
-* _**<AlphaNum>** ::= <LowerAlpha> | <UpperAlpha> | <Digit>_
+* _**&lt;AlphaNum&gt;** ::= &lt;LowerAlpha&gt; | &lt;UpperAlpha&gt; | &lt;Digit&gt;_
 
-* _**<Predicate>** ::= <LowerAlpha> | <AlphaNum>*_
+* _**&lt;Predicate&gt;** ::= &lt;LowerAlpha&gt; | &lt;AlphaNum&gt;*_
 
-* _**<Constant>** ::= <Predicate> | <Number>_
+* _**&lt;Constant&gt;** ::= &lt;Predicate&gt; | &lt;Number&gt;_
 
-* _**<Variable>** ::= <UpperAlpha> <AlphaNum>* | '_'_
+* _**&lt;Variable&gt;** ::= &lt;UpperAlpha&gt; &lt;AlphaNum&gt;* |_ '_'
 
-* _**<Structure>** ::= <Predicate> '(' <List> ')'_
+* _**&lt;Structure&gt;** ::= &lt;Predicate&gt; '(' &lt;List&gt; ')'_
 
-* _**<List>** ::= <Element> | <Element> ',' <List>_
+* _**&lt;List&gt;** ::= &lt;Element&gt; | &lt;Element&gt; ',' &lt;List&gt;_
 
-* _**<Element>** ::= <Variable> | <Constant> | <Structure>_
+* _**&lt;Element&gt;** ::= &lt;Variable&gt; | &lt;Constant&gt; | &lt;Structure&gt;_
 
 Parsing the term _p(Z, h(Z, W), f(W))_ with:
 
-'''clojure
+```clojure
 (use 'wam.l0.grammar)
 (parse-all structure "p(Z, h(Z, W), f(W))")
-'''
+```
 
 yields:
 
-'''
+```
 #Structure{:functor p|3, 
            :args (#Variable{:name Z} 
                   #Structure{:functor h|2, 
@@ -99,7 +99,7 @@ yields:
                                     #Variable{:name W}})} 
                   #Structure{:functor f|1, 
                              :args (#Variable{:name W})})}
-'''
+```
 
 ## Language ℒ₁
 
