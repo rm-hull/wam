@@ -22,7 +22,8 @@
 
 
 ;; ℳ₀ machine instructions
-(ns wam.l0.instruction-set)
+(ns wam.l0.instruction-set
+  (:require [clojure.string :refer [split]]))
 
 (defn put-structure
   "This instruction marks the beginning of a structure (without
@@ -35,8 +36,8 @@
         v ['STR (inc h)]]
     (->
       ctx
-      (assoc-in [:heap h] v)
-      (assoc-in [:heap (inc h)] f|N)
+      (assoc-in [:store h] v)
+      (assoc-in [:store (inc h)] f|N)
       (assoc-in [:registers Xi] v)
       (update-in [:pointer :h] (partial + 2)))))
 
@@ -51,7 +52,7 @@
         v ['REF h]]
     (->
       ctx
-      (assoc-in [:heap h] v)
+      (assoc-in [:store h] v)
       (assoc-in [:registers Xi] v)
       (update-in [:pointer :h] inc))))
 
@@ -60,33 +61,37 @@
         v (get-in ctx [:registers Xi])]
     (->
       ctx
-      (assoc-in [:heap h] v)
+      (assoc-in [:store h] v)
       (update-in [:pointer :h] inc))))
 
 
 (comment
   ; Exercise 2.1 (pg. 9)
   ; Compiled code for L0 query ?-p(Z,h(Z,W),f(W)).
-  (use '[table.core :only [table]])
+  (use 'table.core)
 
   (def context {
-    :pointer {:h 0}
-    :heap (sorted-map)
+    :fail false
+    :mode :read
+    :pointer {:h 0 :s 0}
+    :store (sorted-map)
     :registers (sorted-map)})
 
-  (->
-    context
-    (put-structure 'h|2, 'X3)
-    (set-variable 'X2)
-    (set-variable 'X5)
-    (put-structure 'f|1, 'X4)
-    (set-value 'X5)
-    (put-structure 'p|3, 'X1)
-    (set-value 'X2)
-    (set-value 'X3)
-    (set-value 'X4)
-    :heap
-    table)
+  (def context
+    (->
+      context
+      (put-structure 'h|2, 'X3)
+      (set-variable 'X2)
+      (set-variable 'X5)
+      (put-structure 'f|1, 'X4)
+      (set-value 'X5)
+      (put-structure 'p|3, 'X1)
+      (set-value 'X2)
+      (set-value 'X3)
+      (set-value 'X4)))
+
+  (table (context :store))
+
   ; +-----+---------+
   ; | key | value   |
   ; +-----+---------+
@@ -104,3 +109,138 @@
   ; | 11  | [STR 5] |
   ; +-----+---------+
 )
+
+(defn deref
+  "Follows a possible reference chain until it reaches either an unbound REF
+   cell or a non-REF cell, the address of which it returns. The effect of
+   dereferencing is none other than composing variable substitutions."
+  [ctx addr]
+  (let [cell (get-in ctx [:store addr])]
+    (cond
+      (not (seq? cell))
+      addr
+
+      (and (= (first cell) 'REF) (not= (second cell) addr))
+      (recur ctx (second cell))
+
+      :else addr)))
+
+
+(defn bind
+  "Effectuate the binding of the heap cell to the address"
+  [ctx addr ref]
+  (assoc-in ctx [:store addr] ['REF ref]))
+
+
+(def push conj)
+
+
+(defn push-args [pdl n v1 v2]
+  (loop [i 0
+         pdl pdl]
+    (if (< i n)
+      (recur (inc i) (-> pdl (push (+ v1 i)) (push (+ v2 i))))
+      pdl)))
+
+
+(defn arity [functor]
+  (-> functor name  (split #"\|") second (Integer/parseInt)))
+
+
+(defn unify
+  "Unification algorithm based on the UNION/FIND method [AHU74], where variable
+   substitutions are built, applied, and composed through dereference pointers.
+   The unification operation is performed on a pair of store addresses."
+  [ctx a1 a2]
+
+  (loop [ctx ctx
+         fail false
+         pdl (-> [] (push a1) (push a2))]
+    (if (or fail (empty? pdl))
+      (assoc ctx :fail fail)
+      (let [d1 (deref ctx (peek pdl))
+            d2 (deref ctx (peek (pop pdl)))
+            pdl (pop (pop pdl))]
+        (if (= d1 d2)
+          (recur ctx fail pdl)
+          (let [cell1 (get-in ctx [:store d1])
+                cell2 (get-in ctx [:store d2])]
+            (if (or (= (first cell1) 'REF) (= (first cell2) 'REF))
+              (recur (bind ctx d1 d2) fail pdl)
+              (let [f|N1 (get-in ctx [:store (second cell1)])
+                    f|N2 (get-in ctx [:store (second cell2)])]
+                (if (= f|N1 f|N2)
+                  (recur ctx fail (push-args pdl (arity f|N1) (second cell1) (second cell2)))
+                  (recur ctx true pdl))))))))))
+
+
+(defn get-structure [ctx f|N, Xi]
+  (let [addr (deref ctx Xi)
+        cell (get-in ctx [:store addr])]
+    (cond
+      (not (seq? cell))
+      (assoc-in ctx [:fail] true)
+
+      (= (first cell) 'REF)
+      (let [h (get-in ctx [:pointer :h])
+            v ['STR (inc h)]]
+        (->
+          ctx
+          (assoc-in [:store h] v)
+          (assoc-in [:store (inc h)] f|N)
+          (bind addr h)
+          (update-in [:pointer :h] (partial + 2))
+          (assoc-in [:mode] :write)))
+
+      (= (first cell) 'STR)
+      (let [a (second cell)]
+        (cond->
+          ctx
+
+          (= (get-in [:store a]) f|N)
+          (->
+            (assoc-in [:pointer :s] (inc a))
+            (assoc-in [:mode] :read))
+
+          :else
+          (assoc-in ctx [:fail] true))))))
+
+
+(defn unify-variable [ctx Xi]
+  (condp = (:mode ctx)
+
+    :read
+    (let [s (get-in ctx [:pointer :s])]
+      (->
+        ctx
+        (assoc-in [:registers Xi] (get-in ctx [:store s]))
+        (update-in [:pointer :s] inc)))
+
+    :write
+    (let [h (get-in ctx [:pointer :h])
+          v ['REF h]]
+      (->
+        ctx
+        (assoc-in [:store h] v)
+        (assoc-in [:registers Xi] v)
+        (update-in [:pointer :h] inc)
+        (update-in [:pointer :s] inc)))))
+
+
+(defn unify-value [ctx Xi]
+  (condp = (:mode ctx)
+
+    :read
+    (let [s (get-in ctx [:pointer :s])]
+      (->
+        ctx
+        (unify Xi s)
+        (update-in [:pointer :s] inc)))
+
+    :write
+    (let [h (get-in ctx [:pointer :h])]
+      (->
+        ctx
+        (assoc-in [:store h] Xi)
+        (update-in [:pointer :h] inc)
+        (update-in [:pointer :s] inc)))))
