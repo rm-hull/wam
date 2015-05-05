@@ -110,6 +110,7 @@ TOOD
 * http://www.ai.sri.com/pubs/files/641.pdf
 * http://wambook.sourceforge.net/wambook.pdf
 * http://stefan.buettcher.org/cs/wam/wam.pdf
+* http://www.cs.ox.ac.uk/jeremy.gibbons/publications/wam.pdf
 * https://gist.github.com/kachayev/b5887f66e2985a21a466
 
 ## License
