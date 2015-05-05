@@ -55,7 +55,7 @@ Produces:
 ```
 TBC...
 
-### EBNF ℒ₀ Grammar & Parser Combinators
+#### EBNF ℒ₀ Grammar & Parser Combinators
 
 The simplistic EBNF [grammar rules](https://github.com/rm-hull/wam/blob/master/L0/src/wam/l0/grammar.clj) 
 for ℒ₀ below have been implemented using a [parser monad](https://github.com/rm-hull/wam/blob/master/L0/src/wam/l0/parser.clj).
