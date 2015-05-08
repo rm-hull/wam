@@ -48,8 +48,9 @@
 
 (def constant
   (do*
-    (c <- (any-of predicate number))
-    (return (Constant. c))))
+    ; (c <- (any-of predicate number))
+    (n <- number)
+    (return (Constant. n))))
 
 (def variable
   (or-else
@@ -64,12 +65,16 @@
 (declare list)
 
 (def structure
-  (do*
-    (p <- predicate)
-    (match "(")
-    (l <- list)
-    (match ")")
-    (return (Structure. (symbol (str p "|" (count l))) l))))
+  (or-else
+    (do*
+      (p <- predicate)
+      (return (Structure. (symbol (str p "|" 0)) []))  )
+    (do*
+      (p <- predicate)
+      (match "(")
+      (l <- list)
+      (match ")")
+      (return (Structure. (symbol (str p "|" (count l))) l)))))
 
 (def element
   (any-of variable constant structure))
@@ -79,9 +84,3 @@
     (fst <- element)
     (rst <- (many (do* spaces (match ",") spaces element)))
     (return (cons fst rst))))
-
-(comment
-  (use 'clojure.pprint)
-  (parse-all structure "h(Z,f(Y,3),X,X1)")
-  (pprint  (parse-all structure "p(Z, h(Z, W), f(W))"))
-  (parse-all structure "p(5)"))

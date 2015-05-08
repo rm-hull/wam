@@ -72,11 +72,11 @@ for ℒ₀ below have been implemented using a [parser monad](https://github.com
 
 * _**&lt;Predicate&gt;** ::= &lt;LowerAlpha&gt; | &lt;AlphaNum&gt;*_
 
-* _**&lt;Constant&gt;** ::= &lt;Predicate&gt; | &lt;Number&gt;_
+* _**&lt;Constant&gt;** ::= &lt;Number&gt;_
 
 * _**&lt;Variable&gt;** ::= &lt;UpperAlpha&gt; &lt;AlphaNum&gt;* |_ '_'
 
-* _**&lt;Structure&gt;** ::= &lt;Predicate&gt; '(' &lt;List&gt; ')'_
+* _**&lt;Structure&gt;** ::= &lt;Predicate&gt; | &lt;Predicate&gt; '(' &lt;List&gt; ')'_
 
 * _**&lt;List&gt;** ::= &lt;Element&gt; | &lt;Element&gt; ',' &lt;List&gt;_
 
