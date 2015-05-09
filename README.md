@@ -4,9 +4,11 @@ A gradual WAM implementation in Clojure following Hassan Aït-Kaci's tutorial re
 ## Language ℒ₀
 
 #### Exercise 2.1 (pg. 9)
-Verify that the effect of executing the sequence of instructions shown in Figure 2.3
-(starting with `H` = 0) does indeed yield a correct heap representation for the term
-_p(Z, h(Z, W), f(W))_ — the one shown earlier as Figure 2.1, in fact.
+
+> Verify that the effect of executing the sequence of instructions shown in 
+> Figure 2.3 (starting with `H` = 0) does indeed yield a correct heap 
+> representation for the term _p(Z, h(Z, W), f(W))_ — the one shown earlier
+> as Figure 2.1, in fact.
 
 See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/master/L0/src/wam/l0/instruction_set.clj) for implementation details
 
@@ -225,6 +227,20 @@ parsed from a string representation **"p(Z, h(Z, W), f(W))"**.
 | 11  | [STR 5] |
 +-----+---------+
 ```
+#### Compiling ℒ₀ programs
+
+TODO
+
+#### Exercise 2.2 (pg. 14)
+
+> Give heap representations for the terms _f(X, g(X, a))_ and _f(b, Y)_.
+> Let _a<sub>1</sub>_ and _a<sub>2</sub>_ be their respective heap addresses, 
+> and let _a<sub>x</sub>_ and _a<sub>y</sub>_ be the heap addresses 
+> corresponding to variables _X_ and _Y_, respectively. Trace the effects of 
+> executing _unify(a<sub>1</sub>, a<sub>2</sub>)_, verifying that it terminates
+> with the eventual dereferenced bindings from _a<sub>x</sub>_ and 
+> _a<sub>y</sub>_ corresponding to _X = b_ and _Y = g(b, a)_.
+
 ## Language ℒ₁
 
 TOOD
