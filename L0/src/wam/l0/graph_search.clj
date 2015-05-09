@@ -23,23 +23,31 @@
 (ns wam.l0.graph-search
   (:require [wam.l0.grammar :refer :all]))
 
-(defn traverse-pre [s]
+(defn traverse-pre [term]
   (cond
-    (seq? s) (map traverse-pre s)
-    (instance? wam.l0.grammar.Structure s) (cons (:functor s) (traverse-pre (:args s)))
+    (seq? term)
+    (map traverse-pre term)
+
+    (instance? wam.l0.grammar.Structure term)
+    (cons term (traverse-pre (:args term)))
+
     :else nil))
 
-(defn traverse-post [s]
+(defn traverse-post [term]
   (cond
-    (seq? s) (map traverse-post s)
-    (instance? wam.l0.grammar.Structure s) (concat (traverse-post (:args s)) [(:functor s)])
+    (seq? term)
+    (map traverse-post term)
+
+    (instance? wam.l0.grammar.Structure term)
+    (concat (traverse-post (:args term)) [term])
+
     :else nil))
 
-(defn dfs-pre-order [s]
-  (remove nil? (flatten (traverse-pre s))))
+(defn dfs-pre-order [term]
+  (remove nil? (flatten (traverse-pre term))))
 
-(defn dfs-post-order [s]
-  (remove nil? (flatten (traverse-post s))))
+(defn dfs-post-order [term]
+  (remove nil? (flatten (traverse-post term))))
 
 (defn append [queue coll]
   (if (empty? coll)
@@ -52,8 +60,8 @@
   ([] clojure.lang.PersistentQueue/EMPTY)
   ([coll] (reduce conj clojure.lang.PersistentQueue/EMPTY coll)))
 
-(defn bfs [s]
-  (loop [queue (queue [s])
+(defn bfs [term]
+  (loop [queue (queue [term])
          seen #{}
          result []]
     (if (empty? queue)
