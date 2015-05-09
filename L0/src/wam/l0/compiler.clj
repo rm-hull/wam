@@ -22,11 +22,16 @@
 
 (ns wam.l0.compiler
   (:require
+    [clojure.set :refer [union]]
+    [wam.l0.instruction-set :refer :all]
     [wam.l0.parser :refer [parse-all]]
-    [wam.l0.grammar :refer :all]
+    [wam.l0.grammar :as g]
     [wam.l0.graph-search :refer :all]))
 
-(defn registers [prefix]
+(defn registers
+  "Generates an infinite incrementing sequence of register symbols,
+   e.g. X1, X2, X3, X4 ..."
+  [prefix]
   (->>
     (iterate inc 1)
     (map #(symbol (str prefix %)))))
@@ -55,25 +60,118 @@
     (bfs term)
     (registers 'X)))
 
+(defn functor
+  "Extracts the functor from a structure, and creates as a
+   symbol suitable for consumption within the instruction set."
+  [structure]
+  (-> structure :functor pr-str symbol))
 
+(def query-builder
+  {:structure-walker
+   dfs-post-order
+
+   :instruction-builder
+   (fn [term register seen? arg?]
+     (if (seen? term)
+       (list set-value register)
+       (cond
+         (instance? wam.l0.grammar.Structure term)
+         (list put-structure (functor term) register)
+
+         (instance? wam.l0.grammar.Variable term)
+         (list set-variable register)
+
+         :else nil)))})
+
+
+(def program-builder
+  {:structure-walker
+    dfs-pre-order
+
+   :instruction-builder
+   (fn [term register seen? arg?]
+       (cond
+         (instance? wam.l0.grammar.Structure term)
+         (if arg?
+           (list unify-variable register)
+           (list get-structure (functor term) register))
+
+         (instance? wam.l0.grammar.Variable term)
+         (if (seen? term)
+           (list unify-value register)
+           (list unify-variable register))
+
+         :else nil))})
+
+(defn compile-structure
+  [instruction-builder structure register-allocation seen?]
+  (loop [args (:args structure)
+         seen? seen?
+         result [(instruction-builder
+                      structure
+                      (register-allocation structure)
+                      seen?
+                      false)]]
+    (if (empty? args)
+      result
+      (recur
+        (rest args)
+        (conj seen? (first args))
+        (conj
+          result
+          (instruction-builder
+            (first args)
+            (register-allocation (first args))
+            seen?
+            true))))))
+
+(defn compile-term
+  "Constructs a sequence of instructions (missing the context argument)
+   suitable for threading with a context. The builder determines how
+   the structures in the term are walked (generally pre-order for
+   programs, and post-order for queries), and emits the most
+   appropriate instructions for each structure, which is reliant on
+   which arguments have been previously processed."
+  [builder term]
+  (let [structure-walker (:structure-walker builder)
+        instruction-builder (:instruction-builder builder)
+        register-allocation (register-allocation term)]
+    (loop [structures (structure-walker term)
+           seen? #{}
+           result []]
+      (if (empty? structures)
+        result
+        (let [structure (first structures)]
+          (recur
+            (rest structures)
+            (conj (union seen? (set (:args structure))) structure)
+            (concat
+              result
+              (compile-structure
+                instruction-builder
+                structure
+                register-allocation
+                seen?))))))))
+
+; Some helper functions to get round limitations in table
 (comment
+
+  (defn inflate [table]
+    (let [max-cols (reduce max 0 (map count table))]
+      (map #(take max-cols (lazy-cat % (repeat nil))) table)))
+
+  (defn headers [& headers]
+    (fn [table] (cons headers table)))
+
+  (def tbl (comp table inflate (headers "instr" "arg1" "arg2")))
+
+
   (use 'table.core)
-  (use 'clojure.pprint)
-  (parse-all structure "h(Z,f(Y,3),X,X1)")
-  (pprint  (parse-all structure "p(Z, h(Z, W), f(W))") )
-  (parse-all structure "p(5)")
+  (def x  (parse-all g/structure "p(Z, h(Z, W), f(W))") )
+  (def y  (parse-all g/structure "p(f(X), h(Y, f(a)), Y)") )
+  (def z  (parse-all g/structure "f(X, g(X,a))") )
 
-  (def x  (parse-all structure "p(Z, h(Z, W), f(W))") )
-  (def y  (parse-all structure "p(f(X), h(Y, f(a)), Y)") )
-  (def z  (parse-all structure "f(X, g(X,a))") )
-  (dfs-pre-order x)
-  (dfs-post-order x)
-  (pprint (bfs x))
-
-  (register-allocation x)
-  (register-allocation y)
-  (register-allocation z)
-
+  (table (register-allocation y))
   (table (register-allocation x))
 
 ;  +-----------------------------------+-------+
@@ -86,6 +184,40 @@
 ;  | wam.l0.grammar.Variable@d77f7490  | X5    |
 ;  +-----------------------------------+-------+
 
-  (dfs-pre-order y)
-  (dfs-post-order z)
+  (tbl (compile-term query-builder x))
+
+;  +----------------------------------------------+------+------+
+;  | instr                                        | arg1 | arg2 |
+;  +----------------------------------------------+------+------+
+;  | wam.l0.instruction_set$put_structure@14f613e | h|2  | X3   |
+;  | wam.l0.instruction_set$set_variable@94c1c0   | X2   |      |
+;  | wam.l0.instruction_set$set_variable@94c1c0   | X5   |      |
+;  | wam.l0.instruction_set$put_structure@14f613e | f|1  | X4   |
+;  | wam.l0.instruction_set$set_value@45176e      | X5   |      |
+;  | wam.l0.instruction_set$put_structure@14f613e | p|3  | X1   |
+;  | wam.l0.instruction_set$set_value@45176e      | X2   |      |
+;  | wam.l0.instruction_set$set_value@45176e      | X3   |      |
+;  | wam.l0.instruction_set$set_value@45176e      | X4   |      |
+;  +----------------------------------------------+------+------+
+
+  (tbl (compile-term program-builder y))
+
+;  +-----------------------------------------------+------+------+
+;  | instr                                         | arg1 | arg2 |
+;  +-----------------------------------------------+------+------+
+;  | wam.l0.instruction_set$get_structure@1458d55  | p|3  | X1   |
+;  | wam.l0.instruction_set$unify_variable@1c40c01 | X2   |      |
+;  | wam.l0.instruction_set$unify_variable@1c40c01 | X3   |      |
+;  | wam.l0.instruction_set$unify_variable@1c40c01 | X4   |      |
+;  | wam.l0.instruction_set$get_structure@1458d55  | f|1  | X2   |
+;  | wam.l0.instruction_set$unify_variable@1c40c01 | X5   |      |
+;  | wam.l0.instruction_set$get_structure@1458d55  | h|2  | X3   |
+;  | wam.l0.instruction_set$unify_value@f92e0d     | X4   |      |
+;  | wam.l0.instruction_set$unify_variable@1c40c01 | X6   |      |
+;  | wam.l0.instruction_set$get_structure@1458d55  | f|1  | X6   |
+;  | wam.l0.instruction_set$unify_variable@1c40c01 | X7   |      |
+;  | wam.l0.instruction_set$get_structure@1458d55  | a|0  | X7   |
+;  +-----------------------------------------------+------+------+
 )
+
+

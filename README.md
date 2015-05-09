@@ -136,6 +136,51 @@ Inspecting the structures, and indeed it matches as follows:
 * X4 = f(X5)
 * X5 = W
 
+Next, given that we have a linear register allocation, walking
+the query term structures in depth-first post-order means that
+instructions can be assembled as follows:
+
+```clojure
+(use 'wam.l0.compiler)
+(use 'table.core)
+
+; Some helper functions to get round limitations in table
+(defn inflate [table]
+  (let [max-cols (reduce max 0 (map count table))]
+    (map #(take max-cols (lazy-cat % (repeat nil))) table)))
+
+(defn headers [& headers]
+  (fn [table] (cons headers table)))
+
+(def table' (comp table inflate (headers "instr" "arg1" "arg2")))
+
+
+(def term (parse-all structure "p(Z, h(Z, W), f(W))"))
+(table' (compile-term query-builder term))
+```
+
+Which returns a list of instructions, which corresponds to Figure 2.3
+in the tutorial:
+```
++----------------------------------------------+------+------+
+| instr                                        | arg1 | arg2 |
++----------------------------------------------+------+------+
+| wam.l0.instruction_set$put_structure@14f613e | h|2  | X3   |
+| wam.l0.instruction_set$set_variable@94c1c0   | X2   |      |
+| wam.l0.instruction_set$set_variable@94c1c0   | X5   |      |
+| wam.l0.instruction_set$put_structure@14f613e | f|1  | X4   |
+| wam.l0.instruction_set$set_value@45176e      | X5   |      |
+| wam.l0.instruction_set$put_structure@14f613e | p|3  | X1   |
+| wam.l0.instruction_set$set_value@45176e      | X2   |      |
+| wam.l0.instruction_set$set_value@45176e      | X3   |      |
+| wam.l0.instruction_set$set_value@45176e      | X4   |      |
++----------------------------------------------+------+------+
+```
+The instructions are not directly executable as yet, as a context
+must be supplied in the first argument to each instruction, but 
+they are however in a suitable format for applying the threading 
+macro and returning a function that is executable.
+
 ## Language ℒ₁
 
 TOOD
