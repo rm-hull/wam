@@ -100,6 +100,41 @@ yields:
                   #Structure{:functor f|1, 
                              :args (#Variable{:name W})})}
 ```
+#### Compiling ℒ₀ queries
+
+Now that the term _p(Z, h(Z, W), f(W))_ parses into a hierarchical data
+structure, a breadth-first search is employed to allocate registers on a
+least available index basis:
+
+```clojure
+(use 'wam.l0.compiler)
+(use 'table.core)
+
+(def term (parse-all structure "p(Z, h(Z, W), f(W))"))
+(table (register-allocation term))
+```
+
+evaluates as:
+
+```
++-----------------------------------+-------+
+| key                               | value |
++-----------------------------------+-------+
+| wam.l0.grammar.Structure@d2562d9f | X1    |
+| wam.l0.grammar.Variable@d77f6b5c  | X2    |
+| wam.l0.grammar.Structure@c8c464ec | X3    |
+| wam.l0.grammar.Structure@b1308ecc | X4    |
+| wam.l0.grammar.Variable@d77f7490  | X5    |
++-----------------------------------+-------+  
+```
+
+Inspecting the structures, and indeed it matches as follows:
+
+* X1 = p(X2, X3, X4)
+* X2 = Z
+* X3 = h(X2, X5)
+* X4 = f(X5)
+* X5 = W
 
 ## Language ℒ₁
 
