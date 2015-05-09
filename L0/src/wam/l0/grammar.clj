@@ -26,6 +26,24 @@
 (defrecord Constant [value])
 (defrecord Variable [name])
 (defrecord Structure [functor args])
+(defrecord Functor [name arg-count])
+
+(defmethod print-method Structure [x ^java.io.Writer writer]
+  (print-method (-> x :functor :name) writer)
+  (when-not (empty? (:args x))
+    (print-method (:args x) writer)))
+
+(defmethod print-method Variable [x ^java.io.Writer writer]
+  (print-method (:name x) writer))
+
+(defmethod print-method Constant [x ^java.io.Writer writer]
+  (print-method (:value x) writer))
+
+(defmethod print-method Functor [x ^java.io.Writer writer]
+  (print-method (:name x) writer)
+  (.write writer "|")
+  (print-method (:arg-count x) writer))
+
 
 (def digit (from-re #"[0-9]"))
 
@@ -68,13 +86,17 @@
   (or-else
     (do*
       (p <- predicate)
-      (return (Structure. (symbol (str p "|" 0)) []))  )
+      (return (Structure.
+                (Functor. (symbol  p) 0)
+                nil)))
     (do*
       (p <- predicate)
       (match "(")
       (l <- list)
       (match ")")
-      (return (Structure. (symbol (str p "|" (count l))) l)))))
+      (return (Structure.
+                (Functor. (symbol p) (count l))
+                l)))))
 
 (def element
   (any-of variable constant structure))
