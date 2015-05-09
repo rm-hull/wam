@@ -16,7 +16,7 @@ See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/master/L0/
   
   (def context {
     :pointer {:h 0}
-    :heap (sorted-map)
+    :store (sorted-map)
     :registers (sorted-map)})
 
   (->
@@ -30,7 +30,7 @@ See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/master/L0/
     (set-value 'X2)
     (set-value 'X3)
     (set-value 'X4)
-    :heap
+    :store
     table)
 ```
 
@@ -108,6 +108,7 @@ least available index basis:
 
 ```clojure
 (use 'wam.l0.compiler)
+(use 'wam.l0.grammar)
 (use 'table.core)
 
 (def term (parse-all structure "p(Z, h(Z, W), f(W))"))
@@ -142,6 +143,7 @@ instructions can be assembled as follows:
 
 ```clojure
 (use 'wam.l0.compiler)
+(use 'wam.l0.grammar)
 (use 'table.core)
 
 ; Some helper functions to get round limitations in table
@@ -154,9 +156,8 @@ instructions can be assembled as follows:
 
 (def table' (comp table inflate (headers "instr" "arg1" "arg2")))
 
-
 (def term (parse-all structure "p(Z, h(Z, W), f(W))"))
-(table' (compile-term query-builder term))
+(table' (emit-instructions query-builder term))
 ```
 
 Which returns a list of instructions, which corresponds to Figure 2.3
@@ -178,9 +179,52 @@ in the tutorial:
 ```
 The instructions are not directly executable as yet, as a context
 must be supplied in the first argument to each instruction, but 
-they are however in a suitable format for applying the threading 
-macro and returning a function that is executable.
+they are however in a suitable format for returning a function 
+that can execute them given a context:
 
+```clojure
+(use 'wam.l0.compiler)
+(use 'wam.l0.grammar)
+(use 'table.core)
+
+(def term (parse-all structure "p(Z, h(Z, W), f(W))"))
+(table' (emit-instructions query-builder term))
+
+(def context {
+  :pointer {:h 0}
+  :store (sorted-map)
+  :registers (sorted-map)})
+
+(def query0
+  (->>
+    "p(Z, h(Z, W), f(W))"
+    (parse-all structure)
+    (compile-term query-builder)))
+
+(-> context query0 :store table)
+```
+This produces the same heap representation as earlier, but significantly, was
+instead generated automatically from executing emitted WAM instructions, 
+which were derived from hierarchical data structures, which in turn were 
+parsed from a string representation **"p(Z, h(Z, W), f(W))"**.
+```
++-----+---------+
+| key | value   |
++-----+---------+
+| 0   | [STR 1] |
+| 1   | h|2     |
+| 2   | [REF 2] |
+| 3   | [REF 3] |
+| 4   | [STR 5] |
+| 5   | f|1     |
+| 6   | [REF 3] |
+| 7   | [STR 8] |
+| 8   | p|3     |
+| 9   | [REF 2] |
+| 10  | [STR 1] |
+| 11  | [STR 5] |
++-----+---------+
+```
 ## Language ℒ₁
 
 TOOD

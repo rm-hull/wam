@@ -125,7 +125,7 @@
             seen?
             true))))))
 
-(defn compile-term
+(defn emit-instructions
   "Constructs a sequence of instructions (missing the context argument)
    suitable for threading with a context. The builder determines how
    the structures in the term are walked (generally pre-order for
@@ -153,9 +153,32 @@
                 register-allocation
                 seen?))))))))
 
-; Some helper functions to get round limitations in table
+(defn exec [ctx [instr & args]]
+  (apply instr ctx args))
+
+(defn compile-term [builder term]
+  (let [instrs (emit-instructions builder term)]
+    (fn [ctx]
+      (reduce exec ctx instrs))))
+
+
+(defn query [ctx expression]
+  (let [executor (->>
+                   expression
+                   (parse-all g/structure)
+                   (compile-term query-builder))]
+    (executor ctx)))
+
+(defn program [ctx expression]
+  (let [executor (->>
+                   expression
+                   (parse-all g/structure)
+                   (compile-term program))]
+    (executor ctx)))
+
 (comment
 
+  ; Some helper functions to get round limitations in table
   (defn inflate [table]
     (let [max-cols (reduce max 0 (map count table))]
       (map #(take max-cols (lazy-cat % (repeat nil))) table)))
@@ -163,8 +186,7 @@
   (defn headers [& headers]
     (fn [table] (cons headers table)))
 
-  (def tbl (comp table inflate (headers "instr" "arg1" "arg2")))
-
+  (def table' (comp table inflate (headers "instr" "arg1" "arg2")))
 
   (use 'table.core)
   (def x  (parse-all g/structure "p(Z, h(Z, W), f(W))") )
@@ -184,7 +206,7 @@
 ;  | wam.l0.grammar.Variable@d77f7490  | X5    |
 ;  +-----------------------------------+-------+
 
-  (tbl (compile-term query-builder x))
+  (table' (emit-instructions query-builder x))
 
 ;  +----------------------------------------------+------+------+
 ;  | instr                                        | arg1 | arg2 |
@@ -200,7 +222,7 @@
 ;  | wam.l0.instruction_set$set_value@45176e      | X4   |      |
 ;  +----------------------------------------------+------+------+
 
-  (tbl (compile-term program-builder y))
+  (table' (emit-instructions program-builder y))
 
 ;  +-----------------------------------------------+------+------+
 ;  | instr                                         | arg1 | arg2 |
@@ -218,6 +240,39 @@
 ;  | wam.l0.instruction_set$unify_variable@1c40c01 | X7   |      |
 ;  | wam.l0.instruction_set$get_structure@1458d55  | a|0  | X7   |
 ;  +-----------------------------------------------+------+------+
+
+(def context {
+  :pointer {:h 0}
+  :store (sorted-map)
+  :registers (sorted-map)})
+
+(def query0
+  (->>
+    "p(Z, h(Z, W), f(W))"
+    (parse-all g/structure)
+    (compile-term query-builder)))
+
+(-> context query0 :store table)
+
+;  +-----+---------+
+;  | key | value   |
+;  +-----+---------+
+;  | 0   | [STR 1] |
+;  | 1   | h|2     |
+;  | 2   | [REF 2] |
+;  | 3   | [REF 3] |
+;  | 4   | [STR 5] |
+;  | 5   | f|1     |
+;  | 6   | [REF 3] |
+;  | 7   | [STR 8] |
+;  | 8   | p|3     |
+;  | 9   | [REF 2] |
+;  | 10  | [STR 1] |
+;  | 11  | [STR 5] |
+;  +-----+---------+
+
+
+
 )
 
 
