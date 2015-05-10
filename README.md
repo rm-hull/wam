@@ -72,7 +72,7 @@ for ℒ₀ below have been implemented using a [parser monad](https://github.com
 
 * _**&lt;AlphaNum&gt;** ::= &lt;LowerAlpha&gt; | &lt;UpperAlpha&gt; | &lt;Digit&gt;_
 
-* _**&lt;Predicate&gt;** ::= &lt;LowerAlpha&gt; | &lt;AlphaNum&gt;*_
+* _**&lt;Predicate&gt;** ::= &lt;LowerAlpha&gt; &lt;AlphaNum&gt;*_
 
 * _**&lt;Constant&gt;** ::= &lt;Number&gt;_
 
