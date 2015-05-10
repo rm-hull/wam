@@ -320,6 +320,33 @@ Inspecting the heap, and it becomes clear that:
 * dereferencing _a<sub>x</sub>_, `REF 14` → `STR 11` → `b|0`, so _X = b_
 * dereferencing _a<sub>y</sub>_, `REF 9` → `STR 3` → `g|2`, so _Y = g(X, a) = g(b, a)_
 
+#### Exercise 2.3 (pg. 14)
+
+> Verify that the effect of executing the sequence of instructions shown in
+> Figure 2.4 right after that in Figure 2.3 produces the MGU of the terms
+> _p(Z, h(Z, W), f(W))_ and _p(f(X), h(Y, f(a)), Y)_. That is, the 
+> (dereferenced) bindings corresponding to _W = f(a)_, _X = f(a)_, 
+> _Y = f(f(a))_, _Z = f(f(a))_.
+
+_MGU_ = Most General Unifier
+
+TODO
+
+#### Exercise 2.4 (pg. 14)
+
+> What are the respective sequences of ℳ₀ instructions for ℒ₀ _query_
+> term ?-_p(f(X), h(Y, f(a)), Y)_ and _program_ term _p(Z, h(Z, W), f(W))_?
+
+TODO
+
+#### Exercise 2.5 (pg. 14)
+
+> After doing Exercise 2.4, verify that the effects of executing the sequence
+> you produced yields the same solution as that of Exercise 2.3.
+
+
+TODO
+
 ## Language ℒ₁
 
 TOOD
