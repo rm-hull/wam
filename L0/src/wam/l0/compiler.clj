@@ -178,6 +178,8 @@
 
 (comment
 
+  (use 'table.core)
+
   ; Some helper functions to get round limitations in table
   (defn inflate [table]
     (let [max-cols (reduce max 0 (map count table))]
@@ -188,7 +190,6 @@
 
   (def table' (comp table inflate (headers "instr" "arg1" "arg2")))
 
-  (use 'table.core)
   (def x  (parse-all g/structure "p(Z, h(Z, W), f(W))") )
   (def y  (parse-all g/structure "p(f(X), h(Y, f(a)), Y)") )
   (def z  (parse-all g/structure "f(X, g(X,a))") )
@@ -271,8 +272,66 @@
 ;  | 11  | [STR 5] |
 ;  +-----+---------+
 
+(def ctx1
+(->
+  context
+  (query "f(X, g(X, a))")
+  (query "f(b, Y)")))
+ (->
+  ctx1
+  :store
+  table
+  )
 
 
+;  +-----+----------+
+;  | key | value    |
+;  +-----+----------+
+;  | 0   | [STR 1]  |
+;  | 1   | a|0      |
+;  | 2   | [STR 3]  |
+;  | 3   | g|2      |
+;  | 4   | [REF 4]  |
+;  | 5   | [STR 1]  |
+;  | 6   | [STR 7]  |   <-- a1
+;  | 7   | f|2      |
+;  | 8   | [REF 4]  |   <-- aX
+;  | 9   | [STR 3]  |
+;  | 10  | [STR 11] |
+;  | 11  | b|0      |
+;  | 12  | [STR 13] |   <-- a2
+;  | 13  | f|2      |
+;  | 14  | [STR 11] |
+;  | 15  | [REF 15] |   <-- aY
+;  +-----+----------+
+
+
+  (->
+    ctx1
+    (unify 6 12)
+    :registers
+    table)
+
+;  +-----+----------+
+;  | key | value    |
+;  +-----+----------+
+;  | 0   | [STR 1]  |
+;  | 1   | a|0      |
+;  | 2   | [STR 3]  |
+;  | 3   | g|2      |
+;  | 4   | [REF 4]  |
+;  | 5   | [STR 1]  |
+;  | 6   | [STR 7]  |   <-- a1
+;  | 7   | f|2      |
+;  | 8   | [REF 14] |   <-- aX
+;  | 9   | [STR 3]  |
+;  | 10  | [STR 11] |
+;  | 11  | b|0      |
+;  | 12  | [STR 13] |   <-- a2
+;  | 13  | f|2      |
+;  | 14  | [STR 11] |
+;  | 15  | [REF 9]  |   <-- aY
+;  +-----+----------+
 )
 
 

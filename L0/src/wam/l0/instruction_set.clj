@@ -125,54 +125,82 @@
 
       :else addr)))
 
+(def ^:private push conj)
+
+(defn ^:private push-args
+  "Push the folllwing n args onto the stack, counting up from v1,
+   interleaving with v2, incrementing at each reduction."
+  [stack n v1 v2]
+  (reduce
+    (fn [stack i] ( ->
+                    stack
+                    (push (+ v1 i))
+                    (push (+ v2 i))))
+    stack
+    (range 1 (inc n))))
+
+(defn ^:private arity
+  "Determine the arity given a functor symbol representation"
+  [functor]
+  (-> functor name (split #"\|") second (Integer/parseInt)))
+
+(def ^:private cell-value
+  "Convenience wrapper to obtain the cell value"
+  second)
+
+(defn ^:private cell-type?
+  "Function maker to determine if a cell is of a given type,
+   presently the known types are REF (reference) or STR (structure)."
+  [type]
+  (fn [tag]
+    (= (first tag) type)))
+
+(def ^:private ref?
+  "Convenience wrapper for REF cell types"
+  (cell-type? 'REF))
+
+(def ^:private str?
+  "Convenience wrapper for STR cell types"
+  (cell-type? 'STR))
 
 (defn bind
   "Effectuate the binding of the heap cell to the address"
   [ctx addr ref]
-  (assoc-in ctx [:store addr] ['REF ref]))
-
-
-(def push conj)
-
-
-(defn push-args [pdl n v1 v2]
-  (loop [i 0
-         pdl pdl]
-    (if (< i n)
-      (recur (inc i) (-> pdl (push (+ v1 i)) (push (+ v2 i))))
-      pdl)))
-
-
-(defn arity [functor]
-  (-> functor name  (split #"\|") second (Integer/parseInt)))
-
+  (let [cell (get-in ctx [:store addr])]
+    (if (str? cell) ; dont overwrite STR, flip the ref / addr and try again
+      (bind ctx ref addr)
+      (assoc-in ctx [:store addr] ['REF ref]))))
 
 (defn unify
-  "Unification algorithm based on the UNION/FIND method [AHU74], where variable
-   substitutions are built, applied, and composed through dereference pointers.
-   The unification operation is performed on a pair of store addresses."
+  "Unification algorithm based on the UNION/FIND method [AHU74], where
+   variable substitutions are built, applied, and composed through
+   dereference pointers. The unification operation is performed on a
+   pair of store addresses, and applied for all functors and their
+   arguments, repeated iteratively until the stack is exhausted."
   [ctx a1 a2]
 
   (loop [ctx ctx
          fail false
-         pdl (-> [] (push a1) (push a2))]
-    (if (or fail (empty? pdl))
+         stack (-> [] (push a1) (push a2))]
+
+    (if (or fail (empty? stack))
       (assoc ctx :fail fail)
-      (let [d1 (deref ctx (peek pdl))
-            d2 (deref ctx (peek (pop pdl)))
-            pdl (pop (pop pdl))]
+      (let [d1 (deref ctx (peek stack))
+            d2 (deref ctx (peek (pop stack)))
+            stack (pop (pop stack))]
         (if (= d1 d2)
-          (recur ctx fail pdl)
+          (recur ctx fail stack)
           (let [cell1 (get-in ctx [:store d1])
                 cell2 (get-in ctx [:store d2])]
-            (if (or (= (first cell1) 'REF) (= (first cell2) 'REF))
-              (recur (bind ctx d1 d2) fail pdl)
-              (let [f|N1 (get-in ctx [:store (second cell1)])
-                    f|N2 (get-in ctx [:store (second cell2)])]
+            (if (or (ref? cell1) (ref? cell2))
+              (recur (bind ctx d1 d2) fail stack)
+              (let [v1 (cell-value cell1)
+                    v2 (cell-value cell2)
+                    f|N1 (get-in ctx [:store v1])
+                    f|N2 (get-in ctx [:store v2])]
                 (if (= f|N1 f|N2)
-                  (recur ctx fail (push-args pdl (arity f|N1) (second cell1) (second cell2)))
-                  (recur ctx true pdl))))))))))
-
+                  (recur ctx fail (push-args stack (arity f|N1) v1 v2))
+                  (recur ctx true stack))))))))))
 
 (defn get-structure [ctx f|N, Xi]
   (let [addr (deref ctx Xi)

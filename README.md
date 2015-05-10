@@ -35,7 +35,6 @@ See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/master/L0/
     :store
     table)
 ```
-
 Produces:
 ```
    +-----+---------+
@@ -55,7 +54,6 @@ Produces:
    | 11  | [STR 5] |
    +-----+---------+
 ```
-TBC...
 
 #### EBNF ℒ₀ Grammar & Parser Combinators
 
@@ -90,9 +88,7 @@ Parsing the term _p(Z, h(Z, W), f(W))_ with:
 (use 'wam.l0.grammar)
 (parse-all structure "p(Z, h(Z, W), f(W))")
 ```
-
 yields:
-
 ```
 #Structure{:functor p|3, 
            :args (#Variable{:name Z} 
@@ -116,9 +112,7 @@ least available index basis:
 (def term (parse-all structure "p(Z, h(Z, W), f(W))"))
 (table (register-allocation term))
 ```
-
 evaluates as:
-
 ```
 +-----------------------------------+-------+
 | key                               | value |
@@ -130,7 +124,6 @@ evaluates as:
 | wam.l0.grammar.Variable@d77f7490  | X5    |
 +-----------------------------------+-------+  
 ```
-
 Inspecting the structures, and indeed it matches as follows:
 
 * X1 = p(X2, X3, X4)
@@ -240,6 +233,92 @@ TODO
 > executing _unify(a<sub>1</sub>, a<sub>2</sub>)_, verifying that it terminates
 > with the eventual dereferenced bindings from _a<sub>x</sub>_ and 
 > _a<sub>y</sub>_ corresponding to _X = b_ and _Y = g(b, a)_.
+
+By applying the query terms to an empty context,
+
+```clojure
+(use 'wam.l0.compiler)
+(use 'table.core)
+
+(def context {
+  :pointer {:h 0}
+  :store (sorted-map)
+  :registers (sorted-map)})
+
+(def new-context
+  (->
+    context
+    (query "f(X, g(X, a))")
+    (query "f(b, Y)")))
+
+(->
+  new-context
+  :store
+  table)
+```
+Gives the following heap structure. Note that the heap addresses for 
+_a<sub>1</sub>_, _a<sub>2</sub>_, _a<sub>x</sub>_ and _a<sub>y</sub>_
+have been annotated at locations 6,12, 8 and 15 respectively.
+```
++-----+----------+
+| key | value    |
++-----+----------+
+| 0   | [STR 1]  |
+| 1   | a|0      |
+| 2   | [STR 3]  |
+| 3   | g|2      |
+| 4   | [REF 4]  |
+| 5   | [STR 1]  |
+| 6   | [STR 7]  |   <-- a1
+| 7   | f|2      |
+| 8   | [REF 4]  |   <-- aX
+| 9   | [STR 3]  |
+| 10  | [STR 11] |
+| 11  | b|0      |
+| 12  | [STR 13] |   <-- a2
+| 13  | f|2      |
+| 14  | [STR 11] |
+| 15  | [REF 15] |   <-- aY
++-----+----------+
+```
+Now, calling _unify(a<sub>1</sub>, a<sub>2</sub>)_, the changed context store
+is displayed below. 
+
+```clojure
+(->
+  new-context
+  (unify 6 12)
+  :store
+  table)
+```
+Note that the context failed flag returns as false (not shown), indicating 
+unification was successful.
+```
++-----+----------+
+| key | value    |
++-----+----------+
+| 0   | [STR 1]  |
+| 1   | a|0      |
+| 2   | [STR 3]  |
+| 3   | g|2      |
+| 4   | [REF 4]  |
+| 5   | [STR 1]  |
+| 6   | [STR 7]  |   <-- a1
+| 7   | f|2      |
+| 8   | [REF 14] |   <-- aX
+| 9   | [STR 3]  |
+| 10  | [STR 11] |
+| 11  | b|0      |
+| 12  | [STR 13] |   <-- a2
+| 13  | f|2      |
+| 14  | [STR 11] |
+| 15  | [REF 9]  |   <-- aY
++-----+----------+
+```
+Inspecting the heap, and it becomes clear that:
+
+* dereferencing _a<sub>x</sub>_, `REF 14` → `STR 11` → `b|0`, so _X = b_
+* dereferencing _a<sub>y</sub>_, `REF 9` → `STR 3` → `g|2`, so _Y = g(X, a) = g(b, a)_
 
 ## Language ℒ₁
 
