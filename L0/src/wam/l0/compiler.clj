@@ -28,7 +28,7 @@
     [wam.l0.grammar :as g]
     [wam.l0.graph-search :refer :all]))
 
-(defn registers
+(defn register-names
   "Generates an infinite incrementing sequence of register symbols,
    e.g. X1, X2, X3, X4 ..."
   [prefix]
@@ -58,7 +58,7 @@
   [term]
   (zipmap
     (bfs term)
-    (registers 'X)))
+    (register-names 'X)))
 
 (defn functor
   "Extracts the functor from a structure, and creates as a
@@ -380,7 +380,41 @@
   (tee (comp table registers))
   )
 
-
+;  +-----+----------+
+;  | key | value    |
+;  +-----+----------+
+;  | 0   | [STR 1]  |
+;  | 1   | h|2      |
+;  | 2   | [STR 5]  |
+;  | 3   | [REF 3]  |
+;  | 4   | [STR 5]  |
+;  | 5   | f|1      |
+;  | 6   | [REF 3]  |
+;  | 7   | [STR 8]  |
+;  | 8   | p|3      |
+;  | 9   | [REF 2]  |
+;  | 10  | [STR 1]  |
+;  | 11  | [STR 5]  |
+;  | 12  | [STR 13] |
+;  | 13  | f|1      |
+;  | 14  | [REF 14] |
+;  | 15  | [STR 16] |
+;  | 16  | f|1      |
+;  | 17  | [REF 17] |
+;  | 18  | [STR 19] |
+;  | 19  | a|0      |
+;  +-----+----------+
+;  +-----+----------+
+;  | key | value    |
+;  +-----+----------+
+;  | X1  | [STR 8]  |
+;  | X2  | [STR 13] |
+;  | X3  | [STR 1]  |
+;  | X4  | [STR 5]  |
+;  | X5  | [REF 14] |
+;  | X6  | [STR 16] |
+;  | X7  | [STR 19] |
+;  +-----+----------+
 )
 
 
