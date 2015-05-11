@@ -85,7 +85,6 @@
 (defn bind
   "Effectuate the binding of the heap cell to the address"
   [ctx a1 a2]
-  (println "bind" a1 a2)
   (let [cell1 (s/get-store ctx a1)
         cell2 (s/get-store ctx a2)]
     (if (and (ref? cell1) (or (not (ref? cell2)) (< a2 a1)))
