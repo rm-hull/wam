@@ -218,8 +218,41 @@ parsed from a string representation **"p(Z, h(Z, W), f(W))"**.
 ```
 #### Compiling ℒ₀ programs
 
-TODO
+Compiling a program term follows a similar vein to query term construction:
+registers are allocated breadth-first, but instead of walking the tree in 
+post-order, a program is walked in pre-order. The rules for emitting instructions
+are also subtly different. Assuming the same helper methods as before:
 
+```clojure
+(use 'wam.l0.compiler)
+(use 'wam.l0.grammar)
+(use 'table.core)
+
+; Assume the same helper functions as before
+
+(def term (parse-all structure "p(f(X), h(Y, f(a)), Y)"))
+(table' (emit-instructions program-builder term))
+```
+Which returns a list of instructions, which corresponds to Figure 2.4
+in the tutorial:
+```
++-----------------------------------------------+------+------+
+| instr                                         | arg1 | arg2 |
++-----------------------------------------------+------+------+
+| wam.l0.instruction_set$get_structure@1458d55  | p|3  | X1   |
+| wam.l0.instruction_set$unify_variable@1c40c01 | X2   |      |
+| wam.l0.instruction_set$unify_variable@1c40c01 | X3   |      |
+| wam.l0.instruction_set$unify_variable@1c40c01 | X4   |      |
+| wam.l0.instruction_set$get_structure@1458d55  | f|1  | X2   |
+| wam.l0.instruction_set$unify_variable@1c40c01 | X5   |      |
+| wam.l0.instruction_set$get_structure@1458d55  | h|2  | X3   |
+| wam.l0.instruction_set$unify_value@f92e0d     | X4   |      |
+| wam.l0.instruction_set$unify_variable@1c40c01 | X6   |      |
+| wam.l0.instruction_set$get_structure@1458d55  | f|1  | X6   |
+| wam.l0.instruction_set$unify_variable@1c40c01 | X7   |      |
+| wam.l0.instruction_set$get_structure@1458d55  | a|0  | X7   |
++-----------------------------------------------+------+------+
+```
 #### Exercise 2.2 (pg. 14)
 
 > Give heap representations for the terms _f(X, g(X, a))_ and _f(b, Y)_.
