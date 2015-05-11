@@ -14,12 +14,10 @@ See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/master/L0/
 
 ```clojure
   (use 'wam.l0.instruction-set)
+  (use 'wam.l0.store)
   (use 'table.core)
   
-  (def context {
-    :pointer {:h 0}
-    :store (sorted-map)
-    :registers (sorted-map)})
+  (def context (make-context))
 
   (->
     context
@@ -32,7 +30,7 @@ See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/master/L0/
     (set-value 'X2)
     (set-value 'X3)
     (set-value 'X4)
-    :store
+    heap
     table)
 ```
 Produces:
@@ -180,15 +178,13 @@ that can execute them given a context:
 ```clojure
 (use 'wam.l0.compiler)
 (use 'wam.l0.grammar)
+(use 'wam.l0.store)
 (use 'table.core)
 
 (def term (parse-all structure "p(Z, h(Z, W), f(W))"))
 (table' (emit-instructions query-builder term))
 
-(def context {
-  :pointer {:h 0}
-  :store (sorted-map)
-  :registers (sorted-map)})
+(def context (make-context))
 
 (def query0
   (->>
@@ -196,7 +192,7 @@ that can execute them given a context:
     (parse-all structure)
     (compile-term query-builder)))
 
-(-> context query0 :store table)
+(-> context query0 heap table)
 ```
 This produces the same heap representation as earlier, but significantly, was
 instead generated automatically from executing emitted WAM instructions, 
@@ -238,12 +234,10 @@ By applying the query terms to an empty context,
 
 ```clojure
 (use 'wam.l0.compiler)
+(use 'wam.l0.store)
 (use 'table.core)
 
-(def context {
-  :pointer {:h 0}
-  :store (sorted-map)
-  :registers (sorted-map)})
+(def context (make-context))
 
 (def new-context
   (->
@@ -253,7 +247,7 @@ By applying the query terms to an empty context,
 
 (->
   new-context
-  :store
+  heap
   table)
 ```
 Gives the following heap structure. Note that the heap addresses for 
@@ -288,7 +282,7 @@ is displayed below.
 (->
   new-context
   (unify 6 12)
-  :store
+  heap
   table)
 ```
 Note that the context failed flag returns as false (not shown), indicating 
