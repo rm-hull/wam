@@ -153,14 +153,24 @@
                 register-allocation
                 seen?))))))))
 
-(defn exec [ctx [instr & args]]
-  (apply instr ctx args))
+(defn exec
+  "Execute an instruction with respect to the supplied context, if
+   the fail flag has not been set. If the context has failed, then
+   just return the context unchanged (i.e. don't execute the instruction).
+   This causes the remaining instructions to also fall through."
+  [ctx [instr & args]]
+  (if-not (:fail ctx)
+    (apply instr ctx args)
+    ctx))
 
-(defn compile-term [builder term]
+(defn compile-term
+  "Emits a sequence of instructions that equates to provided term according
+   to the rules of the builder. Returns a function which is capable of
+   executing the instructions given a context."
+  [builder term]
   (let [instrs (emit-instructions builder term)]
     (fn [ctx]
       (reduce exec ctx instrs))))
-
 
 (defn query [ctx expression]
   (let [executor (->>
@@ -179,6 +189,7 @@
 (comment
 
   (use 'table.core)
+  (use 'wam.l0.store)
 
   ; Some helper functions to get round limitations in table
   (defn inflate [table]
@@ -242,10 +253,7 @@
 ;  | wam.l0.instruction_set$get_structure@1458d55  | a|0  | X7   |
 ;  +-----------------------------------------------+------+------+
 
-(def context {
-  :pointer {:h 0}
-  :store (sorted-map)
-  :registers (sorted-map)})
+(def ctx (make-context))
 
 (def query0
   (->>
@@ -253,7 +261,7 @@
     (parse-all g/structure)
     (compile-term query-builder)))
 
-(-> context query0 :store table)
+(-> ctx query0 heap table)
 
 ;  +-----+---------+
 ;  | key | value   |
@@ -274,12 +282,13 @@
 
 (def ctx1
 (->
-  context
+  ctx
   (query "f(X, g(X, a))")
   (query "f(b, Y)")))
+
  (->
   ctx1
-  :store
+  heap
   table
   )
 
@@ -305,11 +314,10 @@
 ;  | 15  | [REF 15] |   <-- aY
 ;  +-----+----------+
 
-
   (->
     ctx1
     (unify 6 12)
-    :registers
+    heap
     table)
 
 ;  +-----+----------+
@@ -332,6 +340,47 @@
 ;  | 14  | [STR 11] |
 ;  | 15  | [REF 9]  |   <-- aY
 ;  +-----+----------+
+
+(defn tee [v func]
+  (func v)
+  v)
+
+
+(->
+  ctx
+  ; p(Z, h(Z, W), f(W))
+  (put-structure 'h|2, 'X3)
+  (set-variable 'X2)
+  (set-variable 'X5)
+  (put-structure 'f|1, 'X4)
+  (set-value 'X5)
+  (put-structure 'p|3, 'X1)
+  (set-value 'X2)
+  (set-value 'X3)
+  (set-value 'X4)
+
+  (tee (comp table heap))
+  (tee (comp table registers))
+
+  ; p(f(X), h(Y, f(a)), Y)
+  (get-structure 'p|3, 'X1)
+  (unify-variable 'X2)
+  (unify-variable 'X3)
+  (unify-variable 'X4)
+  (get-structure 'f|1, 'X2)
+  (unify-variable 'X5)
+  (get-structure 'h|2, 'X3)
+  (unify-value 'X4)
+  (unify-variable 'X6)
+  (get-structure 'f|1, 'X6)
+  (unify-variable 'X7)
+  (get-structure 'a|0, 'X7)
+
+  (tee (comp table heap))
+  (tee (comp table registers))
+  )
+
+
 )
 
 
