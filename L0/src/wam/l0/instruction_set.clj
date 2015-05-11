@@ -23,6 +23,7 @@
 
 ;; ℳ₀ machine instructions
 (ns wam.l0.instruction-set
+  (:refer-clojure :exclude [deref])
   (:require
     [clojure.string :refer [split]]
     [wam.l0.store :as s]))
@@ -107,11 +108,31 @@
   ; +-----+---------+
 )
 
+(defn ^:private arity
+  "Determine the arity given a functor symbol representation"
+  [functor]
+  (-> functor name (split #"\|") second (Integer/parseInt)))
+
 (def ^:private cell-value
   "Convenience wrapper to obtain the cell value"
   second)
 
-(defn deref
+(defn ^:private cell-type?
+  "Function maker to determine if a cell is of a given type,
+   presently the known types are REF (reference) or STR (structure)."
+  [type]
+  (fn [tag]
+    (= (first tag) type)))
+
+(def ^:private ref?
+  "Convenience wrapper for REF cell types"
+  (cell-type? 'REF))
+
+(def ^:private str?
+  "Convenience wrapper for STR cell types"
+  (cell-type? 'STR))
+
+(defn ^:private deref
   "Follows a possible reference chain until it reaches either an unbound REF
    cell or a non-REF cell, the address of which it returns. The effect of
    dereferencing is none other than composing variable substitutions."
@@ -141,26 +162,6 @@
                     (push (+ v2 i))))
     stack
     (range 1 (inc n))))
-
-(defn ^:private arity
-  "Determine the arity given a functor symbol representation"
-  [functor]
-  (-> functor name (split #"\|") second (Integer/parseInt)))
-
-(defn ^:private cell-type?
-  "Function maker to determine if a cell is of a given type,
-   presently the known types are REF (reference) or STR (structure)."
-  [type]
-  (fn [tag]
-    (= (first tag) type)))
-
-(def ^:private ref?
-  "Convenience wrapper for REF cell types"
-  (cell-type? 'REF))
-
-(def ^:private str?
-  "Convenience wrapper for STR cell types"
-  (cell-type? 'STR))
 
 (defn bind
   "Effectuate the binding of the heap cell to the address"

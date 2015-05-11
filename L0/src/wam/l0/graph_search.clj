@@ -21,7 +21,7 @@
 ;; SOFTWARE.
 
 (ns wam.l0.graph-search
-  (:require [wam.l0.grammar :refer :all]))
+  (:require [wam.l0.grammar :as g]))
 
 (defn traverse-pre [term]
   (cond

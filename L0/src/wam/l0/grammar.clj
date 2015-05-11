@@ -21,6 +21,7 @@
 ;; SOFTWARE.
 
 (ns wam.l0.grammar
+  (:refer-clojure :exclude [list])
   (:require [wam.l0.parser :refer :all]))
 
 (defrecord Constant [value])
