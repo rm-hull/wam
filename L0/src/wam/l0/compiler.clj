@@ -153,6 +153,11 @@
                 register-allocation
                 seen?))))))))
 
+(defn func-name [func]
+  (second (re-find #"\$(.*)@" (str func))))
+
+(func-name unify-variable)
+
 (defn exec
   "Execute an instruction with respect to the supplied context, if
    the fail flag has not been set. If the context has failed, then
@@ -160,7 +165,10 @@
    This causes the remaining instructions to also fall through."
   [ctx [instr & args]]
   (if-not (:fail ctx)
-    (apply instr ctx args)
+    (do
+      (when (:trace ctx)
+        (println (func-name instr) args))
+      (apply instr ctx args))
     ctx))
 
 (defn compile-term
@@ -183,7 +191,7 @@
   (let [executor (->>
                    expression
                    (parse-all g/structure)
-                   (compile-term program))]
+                   (compile-term program-builder))]
     (executor ctx)))
 
 (comment
@@ -414,6 +422,39 @@
 ;  | X5  | [REF 14] |
 ;  | X6  | [STR 16] |
 ;  | X7  | [STR 19] |
+;  +-----+----------+
+
+(->
+  ctx
+  (assoc :trace true)
+  (query "p(f(X), h(Y, f(a)), Y)")
+  (program "p(Z, h(Z, W), f(W))")
+  heap
+  table)
+
+;  +-----+----------+
+;  | key | value    |
+;  +-----+----------+
+;  | 0   | [STR 1]  |
+;  | 1   | f|1      |
+;  | 2   | [REF 2]  |
+;  | 3   | [STR 4]  |
+;  | 4   | a|0      |
+;  | 5   | [STR 6]  |
+;  | 6   | f|1      |
+;  | 7   | [STR 4]  |
+;  | 8   | [STR 9]  |
+;  | 9   | h|2      |
+;  | 10  | [STR 1]  |
+;  | 11  | [STR 6]  |
+;  | 12  | [STR 13] |
+;  | 13  | p|3      |
+;  | 14  | [STR 1]  |
+;  | 15  | [STR 9]  |
+;  | 16  | [REF 10] |
+;  | 17  | [STR 18] |
+;  | 18  | f|1      |
+;  | 19  | [STR 6]  |
 ;  +-----+----------+
 )
 
