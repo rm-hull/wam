@@ -23,9 +23,9 @@
 
 ;; ℳ₀ machine instructions
 (ns wam.l0.instruction-set
-  (:refer-clojure :exclude [deref])
   (:require
     [clojure.string :refer [split]]
+    [wam.l0.anciliary :as a]
     [wam.l0.store :as s]))
 
 (defn put-structure
@@ -35,12 +35,12 @@
    heap, and puts a corresponding structure pointer into register
    Xi. Execution then proceeds in \"write\" mode."
   [ctx f|N Xi]
-  (let [h (get-in ctx [:pointer :h])
+  (let [h (s/pointer ctx :h)
         v ['STR (inc h)]]
     (->
       ctx
-      (s/set-heap h v)
-      (s/set-heap (inc h) f|N)
+      (s/set-store h v)
+      (s/set-store (inc h) f|N)
       (s/set-register Xi v)
       (s/increment :h)
       (s/increment :h))))
@@ -52,20 +52,20 @@
    unbound variable. THe instruction creates an unbound variable on the
    heap, and puts a reference to it in the Xi register."
   [ctx Xi]
-  (let [h (get-in ctx [:pointer :h])
+  (let [h (s/pointer ctx :h)
         v ['REF h]]
     (->
       ctx
-      (s/set-heap h v)
+      (s/set-store h v)
       (s/set-register Xi v)
       (s/increment :h))))
 
 (defn set-value [ctx Xi]
-  (let [h (get-in ctx [:pointer :h])
+  (let [h (s/pointer ctx :h)
         v (s/get-register ctx Xi)]
     (->
       ctx
-      (s/set-heap h v)
+      (s/set-store h v)
       (s/increment :h))))
 
 
@@ -108,122 +108,28 @@
   ; +-----+---------+
 )
 
-(defn ^:private arity
-  "Determine the arity given a functor symbol representation"
-  [functor]
-  (-> functor name (split #"\|") second (Integer/parseInt)))
-
-(def ^:private cell-value
-  "Convenience wrapper to obtain the cell value"
-  second)
-
-(defn ^:private cell-type?
-  "Function maker to determine if a cell is of a given type,
-   presently the known types are REF (reference) or STR (structure)."
-  [type]
-  (fn [tag]
-    (= (first tag) type)))
-
-(def ^:private ref?
-  "Convenience wrapper for REF cell types"
-  (cell-type? 'REF))
-
-(def ^:private str?
-  "Convenience wrapper for STR cell types"
-  (cell-type? 'STR))
-
-(defn ^:private deref
-  "Follows a possible reference chain until it reaches either an unbound REF
-   cell or a non-REF cell, the address of which it returns. The effect of
-   dereferencing is none other than composing variable substitutions."
-  [ctx addr]
-  (if (symbol? addr)
-    (deref ctx (s/register-address ctx addr))
-    (let [cell (get-in ctx [:store addr])]
-      (cond
-        (not (seq? cell))
-        addr
-
-        (and (ref? cell) (not= (cell-value cell) addr))
-        (recur ctx (cell-value cell))
-
-        :else addr))))
-
-(def ^:private push conj)
-
-(defn ^:private push-args
-  "Push the folllwing n args onto the stack, counting up from v1,
-   interleaving with v2, incrementing at each reduction."
-  [stack n v1 v2]
-  (reduce
-    (fn [stack i] ( ->
-                    stack
-                    (push (+ v1 i))
-                    (push (+ v2 i))))
-    stack
-    (range 1 (inc n))))
-
-(defn bind
-  "Effectuate the binding of the heap cell to the address"
-  [ctx addr ref]
-  (let [cell (get-in ctx [:store addr])]
-    (if (str? cell) ; dont overwrite STR, flip the ref / addr and try again
-      (bind ctx ref addr)
-      (s/set-heap ctx addr ['REF ref]))))
-
-(defn unify
-  "Unification algorithm based on the UNION/FIND method [AHU74], where
-   variable substitutions are built, applied, and composed through
-   dereference pointers. The unification operation is performed on a
-   pair of store addresses, and applied for all functors and their
-   arguments, repeated iteratively until the stack is exhausted."
-  [ctx a1 a2]
-
-  (loop [ctx ctx
-         fail false
-         stack (-> [] (push a1) (push a2))]
-
-    (if (or fail (empty? stack))
-      (assoc ctx :fail fail)
-      (let [d1 (deref ctx (peek stack))
-            d2 (deref ctx (peek (pop stack)))
-            stack (pop (pop stack))]
-        (if (= d1 d2)
-          (recur ctx fail stack)
-          (let [cell1 (get-in ctx [:store d1])
-                cell2 (get-in ctx [:store d2])]
-            (if (or (ref? cell1) (ref? cell2))
-              (recur (bind ctx d1 d2) fail stack)
-              (let [v1 (cell-value cell1)
-                    v2 (cell-value cell2)
-                    f|N1 (get-in ctx [:store v1])
-                    f|N2 (get-in ctx [:store v2])]
-                (if (= f|N1 f|N2)
-                  (recur ctx fail (push-args stack (arity f|N1) v1 v2))
-                  (recur ctx true stack))))))))))
-
 (defn get-structure [ctx f|N Xi]
-  (let [addr (deref ctx Xi)
+  (let [addr (a/deref ctx Xi)
         cell (get-in ctx [:store addr])]
     (cond
       (not (coll? cell))
       (s/fail ctx)
 
-      (ref? cell)
-      (let [h (get-in ctx [:pointer :h])
+      (a/ref? cell)
+      (let [h (s/pointer ctx :h)
             v ['STR (inc h)]]
         (->
           ctx
-          (s/set-heap h v)
-          (s/set-heap (inc h) f|N)
-          (bind addr h)
+          (s/set-store h v)
+          (s/set-store (inc h) f|N)
+          (a/bind addr h)
           (s/increment :h)
           (s/increment :h)
           (s/mode :write)))
 
-      (str? cell)
-      (let [a (cell-value cell)]
-        (if (= (get-in ctx [:store a]) f|N)
+      (a/str? cell)
+      (let [a (a/cell-value cell)]
+        (if (= (s/get-store ctx a) f|N)
           (->
             ctx
             (assoc-in [:pointer :s] (inc a))
@@ -235,18 +141,19 @@
   (condp = (:mode ctx)
 
     :read
-    (let [s (get-in ctx [:pointer :s])]
+    (let [s (s/pointer ctx :s)
+          v (s/get-store ctx s)]
       (->
         ctx
-        (s/set-register Xi (get-in ctx [:store s]))
+        (s/set-register Xi v)
         (s/increment :s)))
 
     :write
-    (let [h (get-in ctx [:pointer :h])
+    (let [h (s/pointer ctx :h)
           v ['REF h]]
       (->
         ctx
-        (s/set-heap h v)
+        (s/set-store h v)
         (s/set-register Xi v)
         (s/increment :h)
         (s/increment :s)))))
@@ -256,18 +163,14 @@
   (condp = (:mode ctx)
 
     :read
-    (let [s (get-in ctx [:pointer :s])]
+    (let [s (s/pointer ctx :s)]
       (->
         ctx
-        (unify Xi s)
+        (a/unify Xi s)
         (s/increment :s)))
 
     :write
-    (let [h (get-in ctx [:pointer :h])]
-      (->
-        ctx
-        (s/set-heap h (s/get-register ctx Xi))
-        (s/increment :h)
-        (s/increment :s)))))
-
-
+    (->
+      ctx
+      (set-value Xi))
+      (s/increment :s)))

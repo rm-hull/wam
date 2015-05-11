@@ -29,22 +29,28 @@
     (fn [Xi]
       (->> Xi str (re-find #"\d+") Integer/parseInt))))
 
-(defn register-address [ctx Xi]
-  (+ (register-number Xi) (get-in ctx [:pointer :x])))
-
-(defn set-register [ctx Xi v]
-  (let [addr (register-address ctx Xi)]
-    (assoc-in ctx [:store addr] v)))
-
-(defn get-register [ctx Xi]
-  (let [addr (register-address ctx Xi)]
-    (get-in ctx [:store addr])))
-
-(defn set-heap [ctx addr v]
-    (assoc-in ctx [:store addr] v))
+(defn pointer [ctx ptr]
+  (get-in ctx [:pointer ptr]))
 
 (defn increment [ctx ptr]
   (update-in ctx [:pointer ptr] inc))
+
+(defn register-address [ctx Xi]
+  (+ (register-number Xi) (pointer ctx :x)))
+
+(defn get-store [ctx addr]
+  (get-in ctx [:store addr]))
+
+(defn get-register [ctx Xi]
+  (let [addr (register-address ctx Xi)]
+    (get-store ctx addr)))
+
+(defn set-store [ctx addr v]
+  (assoc-in ctx [:store addr] v))
+
+(defn set-register [ctx Xi v]
+  (let [addr (register-address ctx Xi)]
+    (set-store ctx addr v)))
 
 (def heap-start 0)
 (def register-start 1000)
