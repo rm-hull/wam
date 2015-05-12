@@ -112,9 +112,6 @@
   (let [addr (a/deref ctx Xi)
         cell (get-in ctx [:store addr])]
     (cond
-      (not (coll? cell))
-      (s/fail ctx)
-
       (a/ref? cell)
       (let [h (s/pointer ctx :h)
             v ['STR (inc h)]]
@@ -134,7 +131,10 @@
             ctx
             (assoc-in [:pointer :s] (inc a))
             (s/mode :read))
-          (s/fail ctx))))))
+          (s/fail ctx)))
+
+      :else
+      (s/fail ctx))))
 
 
 (defn unify-variable [ctx Xi]

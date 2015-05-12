@@ -41,7 +41,7 @@
    presently the known types are REF (reference) or STR (structure)."
   [type]
   (fn [tag]
-    (= (first tag) type)))
+    (and (coll? tag) (= (first tag) type))))
 
 (def ref?
   "Convenience wrapper for REF cell types"
@@ -87,7 +87,8 @@
   [ctx a1 a2]
   (let [cell1 (s/get-store ctx a1)
         cell2 (s/get-store ctx a2)]
-    (if (and (ref? cell1) (or (not (ref? cell2)) (< a2 a1)))
+;    (if (and (ref? cell1) (or (not (ref? cell2)) (< a2 a1)))
+    (if (and (ref? cell1) (not (ref? cell2)))
       (s/set-store ctx a1 cell2)
       (s/set-store ctx a2 cell1))))
 
