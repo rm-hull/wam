@@ -415,22 +415,24 @@
 ;  +-----+----------+
 ;  | key | value    |
 ;  +-----+----------+
-;  | X1  | [STR 8]  |
-;  | X2  | [STR 13] |
-;  | X3  | [STR 1]  |
-;  | X4  | [STR 5]  |
-;  | X5  | [REF 14] |
-;  | X6  | [STR 16] |
-;  | X7  | [STR 19] |
+;  | X1  | [STR 8]  | p
+;  | X2  | [STR 13] | f(_)
+;  | X3  | [STR 1]  | h(f(_),_)
+;  | X4  | [STR 5]  | Y = f(_)
+;  | X5  | [REF 14] | X = _
+;  | X6  | [STR 16] | Y = f(_)
+;  | X7  | [STR 19] | a = 0
 ;  +-----+----------+
-
 (->
   ctx
   (assoc :trace true)
   (query "p(f(X), h(Y, f(a)), Y)")
+  (tee (comp table registers))
   (program "p(Z, h(Z, W), f(W))")
-  heap
-  table)
+
+  (tee (comp table heap))
+  (tee (comp table registers))
+  )
 
 ;  +-----+----------+
 ;  | key | value    |
@@ -456,6 +458,32 @@
 ;  | 18  | f|1      |
 ;  | 19  | [STR 6]  |
 ;  +-----+----------+
+
+(->
+  ctx
+  (assoc :trace true)
+  (query "father(R, henry)")
+  (tee (comp table heap))
+  (tee (comp table registers))
+
+  (program "father(richard, henry)")
+  (tee (comp table heap))
+  (tee (comp table registers))
+  )
+
+  (table (register-allocation (parse-all g/structure "father(R, henry)")))
+(->
+  ctx
+  (assoc :trace true)
+  (query "father(richard, J)")
+  (tee (comp table heap))
+  (tee (comp table registers))
+
+  (program "father(W, K)")
+  (tee (comp table heap))
+  (tee (comp table registers))
+  )
+
 )
 
 
