@@ -20,15 +20,15 @@
 ;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ;; SOFTWARE.
 
-(ns wam.l0.graph-search
-  (:require [wam.l0.grammar :as g]))
+(ns wam.graph-search
+  (:require [wam.grammar :as g]))
 
 (defn traverse-pre [term]
   (cond
     (seq? term)
     (map traverse-pre term)
 
-    (instance? wam.l0.grammar.Structure term)
+    (instance? wam.grammar.Structure term)
     (cons term (traverse-pre (:args term)))
 
     :else nil))
@@ -38,7 +38,7 @@
     (seq? term)
     (map traverse-post term)
 
-    (instance? wam.l0.grammar.Structure term)
+    (instance? wam.grammar.Structure term)
     (concat (traverse-post (:args term)) [term])
 
     :else nil))
@@ -73,7 +73,7 @@
           (seen v)
           (recur queue seen result)
 
-          (instance? wam.l0.grammar.Structure v)
+          (instance? wam.grammar.Structure v)
           (recur (append queue (:args v)) (conj seen v) (conj result v))
 
           :else

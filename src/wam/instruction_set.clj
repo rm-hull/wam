@@ -22,11 +22,11 @@
 
 
 ;; ℳ₀ machine instructions
-(ns wam.l0.instruction-set
+(ns wam.instruction-set
   (:require
     [clojure.string :refer [split]]
-    [wam.l0.anciliary :as a]
-    [wam.l0.store :as s]))
+    [wam.anciliary :as a]
+    [wam.store :as s]))
 
 (defn put-structure
   "This instruction marks the beginning of a structure (without

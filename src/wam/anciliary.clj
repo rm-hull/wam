@@ -21,11 +21,11 @@
 ;; SOFTWARE.
 
 
-(ns wam.l0.anciliary
+(ns wam.anciliary
   (:refer-clojure :exclude [deref])
   (:require
     [clojure.string :refer [split]]
-    [wam.l0.store :as s]))
+    [wam.store :as s]))
 
 (defn ^:private arity
   "Determine the arity given a functor symbol representation"

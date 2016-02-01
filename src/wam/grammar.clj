@@ -20,9 +20,9 @@
 ;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ;; SOFTWARE.
 
-(ns wam.l0.grammar
+(ns wam.grammar
   (:refer-clojure :exclude [list])
-  (:require [wam.l0.parser :refer :all]))
+  (:require [wam.parser :refer :all]))
 
 (defrecord Constant [value])
 (defrecord Variable [name])

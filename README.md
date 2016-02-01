@@ -1,22 +1,23 @@
-# Warren's Abstract Machine
+# Warren's Abstract Machine [![Build Status](https://travis-ci.org/rm-hull/wam.svg?branch=master)](http://travis-ci.org/rm-hull/wam) [![Coverage Status](https://coveralls.io/repos/rm-hull/wam/badge.svg?branch=master)](https://coveralls.io/r/rm-hull/wam?branch=master)
+
 A gradual WAM implementation in Clojure following Hassan Aït-Kaci's tutorial reconstruction.
 
 ## Language ℒ₀
 
 #### Exercise 2.1 (pg. 9)
 
-> Verify that the effect of executing the sequence of instructions shown in 
-> Figure 2.3 (starting with `H` = 0) does indeed yield a correct heap 
+> Verify that the effect of executing the sequence of instructions shown in
+> Figure 2.3 (starting with `H` = 0) does indeed yield a correct heap
 > representation for the term _p(Z, h(Z, W), f(W))_ — the one shown earlier
 > as Figure 2.1, in fact.
 
-See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/master/L0/src/wam/l0/instruction_set.clj) for implementation details
+See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/master/src/wam/instruction_set.clj) for implementation details
 
 ```clojure
-  (use 'wam.l0.instruction-set)
-  (use 'wam.l0.store)
+  (use 'wam.instruction-set)
+  (use 'wam.store)
   (use 'table.core)
-  
+
   (def context (make-context))
 
   (->
@@ -55,8 +56,8 @@ Produces:
 
 #### EBNF ℒ₀ Grammar & Parser Combinators
 
-The simplistic EBNF [grammar rules](https://github.com/rm-hull/wam/blob/master/L0/src/wam/l0/grammar.clj) 
-for ℒ₀ below have been implemented using a [parser monad](https://github.com/rm-hull/wam/blob/master/L0/src/wam/l0/parser.clj).
+The simplistic EBNF [grammar rules](https://github.com/rm-hull/wam/blob/master/src/wam/grammar.clj)
+for ℒ₀ below have been implemented using a [parser monad](https://github.com/rm-hull/wam/blob/master/src/wam/parser.clj).
 
 * _**&lt;Digit&gt;** ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'_
 
@@ -83,17 +84,17 @@ for ℒ₀ below have been implemented using a [parser monad](https://github.com
 Parsing the term _p(Z, h(Z, W), f(W))_ with:
 
 ```clojure
-(use 'wam.l0.grammar)
+(use 'wam.grammar)
 (parse-all structure "p(Z, h(Z, W), f(W))")
 ```
 yields:
 ```
-#Structure{:functor p|3, 
-           :args (#Variable{:name Z} 
-                  #Structure{:functor h|2, 
-                             :args (#Variable{:name Z} 
-                                    #Variable{:name W}})} 
-                  #Structure{:functor f|1, 
+#Structure{:functor p|3,
+           :args (#Variable{:name Z}
+                  #Structure{:functor h|2,
+                             :args (#Variable{:name Z}
+                                    #Variable{:name W}})}
+                  #Structure{:functor f|1,
                              :args (#Variable{:name W})})}
 ```
 #### Compiling ℒ₀ queries
@@ -103,8 +104,8 @@ structure, a breadth-first search is employed to allocate registers on a
 least available index basis:
 
 ```clojure
-(use 'wam.l0.compiler)
-(use 'wam.l0.grammar)
+(use 'wam.compiler)
+(use 'wam.grammar)
 (use 'table.core)
 
 (def term (parse-all structure "p(Z, h(Z, W), f(W))"))
@@ -112,15 +113,15 @@ least available index basis:
 ```
 evaluates as:
 ```
-+-----------------------------------+-------+
-| key                               | value |
-+-----------------------------------+-------+
-| wam.l0.grammar.Structure@d2562d9f | X1    |
-| wam.l0.grammar.Variable@d77f6b5c  | X2    |
-| wam.l0.grammar.Structure@c8c464ec | X3    |
-| wam.l0.grammar.Structure@b1308ecc | X4    |
-| wam.l0.grammar.Variable@d77f7490  | X5    |
-+-----------------------------------+-------+  
++--------------------------------+-------+
+| key                            | value |
++--------------------------------+-------+
+| wam.grammar.Structure@d2562d9f | X1    |
+| wam.grammar.Variable@d77f6b5c  | X2    |
+| wam.grammar.Structure@c8c464ec | X3    |
+| wam.grammar.Structure@b1308ecc | X4    |
+| wam.grammar.Variable@d77f7490  | X5    |
++--------------------------------+-------+
 ```
 Inspecting the structures, and indeed it matches as follows:
 
@@ -135,8 +136,8 @@ the query term structures in depth-first post-order means that
 instructions can be assembled as follows:
 
 ```clojure
-(use 'wam.l0.compiler)
-(use 'wam.l0.grammar)
+(use 'wam.compiler)
+(use 'wam.grammar)
 (use 'table.core)
 
 ; Some helper functions to get round limitations in table
@@ -156,29 +157,29 @@ instructions can be assembled as follows:
 Which returns a list of instructions, which corresponds to Figure 2.3
 in the tutorial:
 ```
-+----------------------------------------------+------+------+
-| instr                                        | arg1 | arg2 |
-+----------------------------------------------+------+------+
-| wam.l0.instruction_set$put_structure@14f613e | h|2  | X3   |
-| wam.l0.instruction_set$set_variable@94c1c0   | X2   |      |
-| wam.l0.instruction_set$set_variable@94c1c0   | X5   |      |
-| wam.l0.instruction_set$put_structure@14f613e | f|1  | X4   |
-| wam.l0.instruction_set$set_value@45176e      | X5   |      |
-| wam.l0.instruction_set$put_structure@14f613e | p|3  | X1   |
-| wam.l0.instruction_set$set_value@45176e      | X2   |      |
-| wam.l0.instruction_set$set_value@45176e      | X3   |      |
-| wam.l0.instruction_set$set_value@45176e      | X4   |      |
-+----------------------------------------------+------+------+
++-------------------------------------------+------+------+
+| instr                                     | arg1 | arg2 |
++-------------------------------------------+------+------+
+| wam.instruction_set$put_structure@14f613e | h|2  | X3   |
+| wam.instruction_set$set_variable@94c1c0   | X2   |      |
+| wam.instruction_set$set_variable@94c1c0   | X5   |      |
+| wam.instruction_set$put_structure@14f613e | f|1  | X4   |
+| wam.instruction_set$set_value@45176e      | X5   |      |
+| wam.instruction_set$put_structure@14f613e | p|3  | X1   |
+| wam.instruction_set$set_value@45176e      | X2   |      |
+| wam.instruction_set$set_value@45176e      | X3   |      |
+| wam.instruction_set$set_value@45176e      | X4   |      |
++-------------------------------------------+------+------+
 ```
 The instructions are not directly executable as yet, as a context
-must be supplied in the first argument to each instruction, but 
-they are however in a suitable format for returning a function 
+must be supplied in the first argument to each instruction, but
+they are however in a suitable format for returning a function
 that can execute them given a context:
 
 ```clojure
-(use 'wam.l0.compiler)
-(use 'wam.l0.grammar)
-(use 'wam.l0.store)
+(use 'wam.compiler)
+(use 'wam.grammar)
+(use 'wam.store)
 (use 'table.core)
 
 (def term (parse-all structure "p(Z, h(Z, W), f(W))"))
@@ -195,8 +196,8 @@ that can execute them given a context:
 (-> context query0 heap table)
 ```
 This produces the same heap representation as earlier, but significantly, was
-instead generated automatically from executing emitted WAM instructions, 
-which were derived from hierarchical data structures, which in turn were 
+instead generated automatically from executing emitted WAM instructions,
+which were derived from hierarchical data structures, which in turn were
 parsed from a string representation **"p(Z, h(Z, W), f(W))"**.
 ```
 +-----+---------+
@@ -219,13 +220,13 @@ parsed from a string representation **"p(Z, h(Z, W), f(W))"**.
 #### Compiling ℒ₀ programs
 
 Compiling a program term follows a similar vein to query term construction:
-registers are allocated breadth-first, but instead of walking the tree in 
+registers are allocated breadth-first, but instead of walking the tree in
 post-order, a program is walked in pre-order. The rules for emitting instructions
 are also subtly different. Assuming the same helper methods as before:
 
 ```clojure
-(use 'wam.l0.compiler)
-(use 'wam.l0.grammar)
+(use 'wam.compiler)
+(use 'wam.grammar)
 (use 'table.core)
 
 ; Assume the same helper functions as before
@@ -236,38 +237,38 @@ are also subtly different. Assuming the same helper methods as before:
 Which returns a list of instructions, which corresponds to Figure 2.4
 in the tutorial:
 ```
-+-----------------------------------------------+------+------+
-| instr                                         | arg1 | arg2 |
-+-----------------------------------------------+------+------+
-| wam.l0.instruction_set$get_structure@1458d55  | p|3  | X1   |
-| wam.l0.instruction_set$unify_variable@1c40c01 | X2   |      |
-| wam.l0.instruction_set$unify_variable@1c40c01 | X3   |      |
-| wam.l0.instruction_set$unify_variable@1c40c01 | X4   |      |
-| wam.l0.instruction_set$get_structure@1458d55  | f|1  | X2   |
-| wam.l0.instruction_set$unify_variable@1c40c01 | X5   |      |
-| wam.l0.instruction_set$get_structure@1458d55  | h|2  | X3   |
-| wam.l0.instruction_set$unify_value@f92e0d     | X4   |      |
-| wam.l0.instruction_set$unify_variable@1c40c01 | X6   |      |
-| wam.l0.instruction_set$get_structure@1458d55  | f|1  | X6   |
-| wam.l0.instruction_set$unify_variable@1c40c01 | X7   |      |
-| wam.l0.instruction_set$get_structure@1458d55  | a|0  | X7   |
-+-----------------------------------------------+------+------+
++--------------------------------------------+------+------+
+| instr                                      | arg1 | arg2 |
++--------------------------------------------+------+------+
+| wam.instruction_set$get_structure@1458d55  | p|3  | X1   |
+| wam.instruction_set$unify_variable@1c40c01 | X2   |      |
+| wam.instruction_set$unify_variable@1c40c01 | X3   |      |
+| wam.instruction_set$unify_variable@1c40c01 | X4   |      |
+| wam.instruction_set$get_structure@1458d55  | f|1  | X2   |
+| wam.instruction_set$unify_variable@1c40c01 | X5   |      |
+| wam.instruction_set$get_structure@1458d55  | h|2  | X3   |
+| wam.instruction_set$unify_value@f92e0d     | X4   |      |
+| wam.instruction_set$unify_variable@1c40c01 | X6   |      |
+| wam.instruction_set$get_structure@1458d55  | f|1  | X6   |
+| wam.instruction_set$unify_variable@1c40c01 | X7   |      |
+| wam.instruction_set$get_structure@1458d55  | a|0  | X7   |
++--------------------------------------------+------+------+
 ```
 #### Exercise 2.2 (pg. 14)
 
 > Give heap representations for the terms _f(X, g(X, a))_ and _f(b, Y)_.
-> Let _a<sub>1</sub>_ and _a<sub>2</sub>_ be their respective heap addresses, 
-> and let _a<sub>x</sub>_ and _a<sub>y</sub>_ be the heap addresses 
-> corresponding to variables _X_ and _Y_, respectively. Trace the effects of 
+> Let _a<sub>1</sub>_ and _a<sub>2</sub>_ be their respective heap addresses,
+> and let _a<sub>x</sub>_ and _a<sub>y</sub>_ be the heap addresses
+> corresponding to variables _X_ and _Y_, respectively. Trace the effects of
 > executing _unify(a<sub>1</sub>, a<sub>2</sub>)_, verifying that it terminates
-> with the eventual dereferenced bindings from _a<sub>x</sub>_ and 
+> with the eventual dereferenced bindings from _a<sub>x</sub>_ and
 > _a<sub>y</sub>_ corresponding to _X = b_ and _Y = g(b, a)_.
 
 By applying the query terms to an empty context,
 
 ```clojure
-(use 'wam.l0.compiler)
-(use 'wam.l0.store)
+(use 'wam.compiler)
+(use 'wam.store)
 (use 'table.core)
 
 (def context (make-context))
@@ -283,7 +284,7 @@ By applying the query terms to an empty context,
   heap
   table)
 ```
-Gives the following heap structure. Note that the heap addresses for 
+Gives the following heap structure. Note that the heap addresses for
 _a<sub>1</sub>_, _a<sub>2</sub>_, _a<sub>x</sub>_ and _a<sub>y</sub>_
 have been annotated at locations 6,12, 8 and 15 respectively.
 ```
@@ -309,7 +310,7 @@ have been annotated at locations 6,12, 8 and 15 respectively.
 +-----+----------+
 ```
 Now, calling _unify(a<sub>1</sub>, a<sub>2</sub>)_, the changed context store
-is displayed below. 
+is displayed below.
 
 ```clojure
 (->
@@ -318,7 +319,7 @@ is displayed below.
   heap
   table)
 ```
-Note that the context failed flag returns as false (not shown), indicating 
+Note that the context failed flag returns as false (not shown), indicating
 unification was successful.
 ```
 +-----+----------+
@@ -351,8 +352,8 @@ Inspecting the heap, and it becomes clear that:
 
 > Verify that the effect of executing the sequence of instructions shown in
 > Figure 2.4 right after that in Figure 2.3 produces the MGU of the terms
-> _p(Z, h(Z, W), f(W))_ and _p(f(X), h(Y, f(a)), Y)_. That is, the 
-> (dereferenced) bindings corresponding to _W = f(a)_, _X = f(a)_, 
+> _p(Z, h(Z, W), f(W))_ and _p(f(X), h(Y, f(a)), Y)_. That is, the
+> (dereferenced) bindings corresponding to _W = f(a)_, _X = f(a)_,
 > _Y = f(f(a))_, _Z = f(f(a))_.
 
 _MGU_ = Most General Unifier

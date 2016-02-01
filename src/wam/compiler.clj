@@ -20,13 +20,13 @@
 ;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ;; SOFTWARE.
 
-(ns wam.l0.compiler
+(ns wam.compiler
   (:require
     [clojure.set :refer [union]]
-    [wam.l0.instruction-set :refer :all]
-    [wam.l0.parser :refer [parse-all]]
-    [wam.l0.grammar :as g]
-    [wam.l0.graph-search :refer :all]))
+    [wam.instruction-set :refer :all]
+    [wam.parser :refer [parse-all]]
+    [wam.grammar :as g]
+    [wam.graph-search :refer :all]))
 
 (defn register-names
   "Generates an infinite incrementing sequence of register symbols,
@@ -75,10 +75,10 @@
      (if (seen? term)
        (list set-value register)
        (cond
-         (instance? wam.l0.grammar.Structure term)
+         (instance? wam.grammar.Structure term)
          (list put-structure (functor term) register)
 
-         (instance? wam.l0.grammar.Variable term)
+         (instance? wam.grammar.Variable term)
          (list set-variable register)
 
          :else nil)))})
@@ -91,12 +91,12 @@
    :instruction-builder
    (fn [term register seen? arg?]
        (cond
-         (instance? wam.l0.grammar.Structure term)
+         (instance? wam.grammar.Structure term)
          (if arg?
            (list unify-variable register)
            (list get-structure (functor term) register))
 
-         (instance? wam.l0.grammar.Variable term)
+         (instance? wam.grammar.Variable term)
          (if (seen? term)
            (list unify-value register)
            (list unify-variable register))
@@ -197,7 +197,7 @@
 (comment
 
   (use 'table.core)
-  (use 'wam.l0.store)
+  (use 'wam.store)
 
   ; Some helper functions to get round limitations in table
   (defn inflate [table]
@@ -216,50 +216,50 @@
   (table (register-allocation y))
   (table (register-allocation x))
 
-;  +-----------------------------------+-------+
-;  | key                               | value |
-;  +-----------------------------------+-------+
-;  | wam.l0.grammar.Structure@d2562d9f | X1    |
-;  | wam.l0.grammar.Variable@d77f6b5c  | X2    |
-;  | wam.l0.grammar.Structure@c8c464ec | X3    |
-;  | wam.l0.grammar.Structure@b1308ecc | X4    |
-;  | wam.l0.grammar.Variable@d77f7490  | X5    |
-;  +-----------------------------------+-------+
+;  +--------------------------------+-------+
+;  | key                            | value |
+;  +--------------------------------+-------+
+;  | wam.grammar.Structure@d2562d9f | X1    |
+;  | wam.grammar.Variable@d77f6b5c  | X2    |
+;  | wam.grammar.Structure@c8c464ec | X3    |
+;  | wam.grammar.Structure@b1308ecc | X4    |
+;  | wam.grammar.Variable@d77f7490  | X5    |
+;  +--------------------------------+-------+
 
   (table' (emit-instructions query-builder x))
 
-;  +----------------------------------------------+------+------+
-;  | instr                                        | arg1 | arg2 |
-;  +----------------------------------------------+------+------+
-;  | wam.l0.instruction_set$put_structure@14f613e | h|2  | X3   |
-;  | wam.l0.instruction_set$set_variable@94c1c0   | X2   |      |
-;  | wam.l0.instruction_set$set_variable@94c1c0   | X5   |      |
-;  | wam.l0.instruction_set$put_structure@14f613e | f|1  | X4   |
-;  | wam.l0.instruction_set$set_value@45176e      | X5   |      |
-;  | wam.l0.instruction_set$put_structure@14f613e | p|3  | X1   |
-;  | wam.l0.instruction_set$set_value@45176e      | X2   |      |
-;  | wam.l0.instruction_set$set_value@45176e      | X3   |      |
-;  | wam.l0.instruction_set$set_value@45176e      | X4   |      |
-;  +----------------------------------------------+------+------+
+;  +-------------------------------------------+------+------+
+;  | instr                                     | arg1 | arg2 |
+;  +-------------------------------------------+------+------+
+;  | wam.instruction_set$put_structure@14f613e | h|2  | X3   |
+;  | wam.instruction_set$set_variable@94c1c0   | X2   |      |
+;  | wam.instruction_set$set_variable@94c1c0   | X5   |      |
+;  | wam.instruction_set$put_structure@14f613e | f|1  | X4   |
+;  | wam.instruction_set$set_value@45176e      | X5   |      |
+;  | wam.instruction_set$put_structure@14f613e | p|3  | X1   |
+;  | wam.instruction_set$set_value@45176e      | X2   |      |
+;  | wam.instruction_set$set_value@45176e      | X3   |      |
+;  | wam.instruction_set$set_value@45176e      | X4   |      |
+;  +-------------------------------------------+------+------+
 
   (table' (emit-instructions program-builder y))
 
-;  +-----------------------------------------------+------+------+
-;  | instr                                         | arg1 | arg2 |
-;  +-----------------------------------------------+------+------+
-;  | wam.l0.instruction_set$get_structure@1458d55  | p|3  | X1   |
-;  | wam.l0.instruction_set$unify_variable@1c40c01 | X2   |      |
-;  | wam.l0.instruction_set$unify_variable@1c40c01 | X3   |      |
-;  | wam.l0.instruction_set$unify_variable@1c40c01 | X4   |      |
-;  | wam.l0.instruction_set$get_structure@1458d55  | f|1  | X2   |
-;  | wam.l0.instruction_set$unify_variable@1c40c01 | X5   |      |
-;  | wam.l0.instruction_set$get_structure@1458d55  | h|2  | X3   |
-;  | wam.l0.instruction_set$unify_value@f92e0d     | X4   |      |
-;  | wam.l0.instruction_set$unify_variable@1c40c01 | X6   |      |
-;  | wam.l0.instruction_set$get_structure@1458d55  | f|1  | X6   |
-;  | wam.l0.instruction_set$unify_variable@1c40c01 | X7   |      |
-;  | wam.l0.instruction_set$get_structure@1458d55  | a|0  | X7   |
-;  +-----------------------------------------------+------+------+
+;  +--------------------------------------------+------+------+
+;  | instr                                      | arg1 | arg2 |
+;  +--------------------------------------------+------+------+
+;  | wam.instruction_set$get_structure@1458d55  | p|3  | X1   |
+;  | wam.instruction_set$unify_variable@1c40c01 | X2   |      |
+;  | wam.instruction_set$unify_variable@1c40c01 | X3   |      |
+;  | wam.instruction_set$unify_variable@1c40c01 | X4   |      |
+;  | wam.instruction_set$get_structure@1458d55  | f|1  | X2   |
+;  | wam.instruction_set$unify_variable@1c40c01 | X5   |      |
+;  | wam.instruction_set$get_structure@1458d55  | h|2  | X3   |
+;  | wam.instruction_set$unify_value@f92e0d     | X4   |      |
+;  | wam.instruction_set$unify_variable@1c40c01 | X6   |      |
+;  | wam.instruction_set$get_structure@1458d55  | f|1  | X6   |
+;  | wam.instruction_set$unify_variable@1c40c01 | X7   |      |
+;  | wam.instruction_set$get_structure@1458d55  | a|0  | X7   |
+;  +--------------------------------------------+------+------+
 
 (def ctx (make-context))
 

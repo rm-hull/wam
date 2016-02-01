@@ -21,7 +21,7 @@
 ;; SOFTWARE.
 
 
-(ns wam.l0.store
+(ns wam.store
   (:require [clojure.string :refer [split]]))
 
 (def ^:private register-number
