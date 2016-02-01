@@ -22,7 +22,8 @@
 
 (ns wam.grammar
   (:refer-clojure :exclude [list])
-  (:require [wam.parser :refer :all]))
+  (:require
+    [wam.parser :refer :all]))
 
 (defrecord Constant [value])
 (defrecord Variable [name])

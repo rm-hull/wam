@@ -11,7 +11,7 @@ A gradual WAM implementation in Clojure following Hassan Aït-Kaci's tutorial re
 > representation for the term _p(Z, h(Z, W), f(W))_ — the one shown earlier
 > as Figure 2.1, in fact.
 
-See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/master/src/wam/instruction_set.clj) for implementation details
+See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/L0/src/wam/instruction_set.clj) for implementation details
 
 ```clojure
   (use 'wam.instruction-set)
@@ -56,8 +56,8 @@ Produces:
 
 #### EBNF ℒ₀ Grammar & Parser Combinators
 
-The simplistic EBNF [grammar rules](https://github.com/rm-hull/wam/blob/master/src/wam/grammar.clj)
-for ℒ₀ below have been implemented using a [parser monad](https://github.com/rm-hull/wam/blob/master/src/wam/parser.clj).
+The simplistic EBNF [grammar rules](https://github.com/rm-hull/wam/blob/L0/src/wam/grammar.clj)
+for ℒ₀ below have been implemented using a [parser monad](https://github.com/rm-hull/wam/blob/L0/src/wam/parser.clj).
 
 * _**&lt;Digit&gt;** ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'_
 
@@ -85,9 +85,10 @@ Parsing the term _p(Z, h(Z, W), f(W))_ with:
 
 ```clojure
 (use 'wam.grammar)
+(use 'wam.parser)
 (parse-all structure "p(Z, h(Z, W), f(W))")
 ```
-yields:
+yields a structure as follows:
 ```
 #Structure{:functor p|3,
            :args (#Variable{:name Z}
