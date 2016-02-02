@@ -33,6 +33,7 @@
 
 (deftest ex2.1
   ; Compiled code for L0 query ?-p(Z,h(Z,W),f(W)).
+
   (is (tbl=
     (->
       ctx

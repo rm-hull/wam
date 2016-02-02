@@ -24,7 +24,20 @@
 (ns wam.assert-helpers
   (:require
     [clojure.string :as str]
-    [table.core :refer [table]]))
+    [table.core :as t]
+    [wam.compiler :as c]))
+
+; Some helper functions to get round limitations in table
+(defn- inflate [table]
+  (let [max-cols (reduce max 0 (map count table))]
+    (map #(take max-cols (lazy-cat % (repeat nil))) table)))
+
+(defn- headers [& headers]
+  (fn [table] (cons headers table)))
+
+(defn friendly [[instr & args]] (cons (c/func-name instr) args))
+
+(def instr (comp t/table inflate (headers "instr" "arg1" "arg2") (partial map friendly)))
 
 (defn- line-trim [s]
   (->>
@@ -34,7 +47,15 @@
     (remove empty?)
     (str/join "\n")))
 
+
 (defn tbl= [actual expected]
   (=
-    (line-trim (with-out-str (table actual)))
+    (line-trim (with-out-str (t/table actual)))
     (line-trim expected)))
+
+
+(defn instr= [actual expected]
+  (=
+    (line-trim (with-out-str (instr actual)))
+    (line-trim expected)))
+

@@ -31,6 +31,9 @@
 (deftest check-variable
   (testing "Variables"
     (is (= (parse-all variable "W") (Variable. 'W)))
+    (is (= (parse-all variable "TEMP") (Variable. 'TEMP)))
+    (is (= (parse-all variable "Temp") (Variable. 'Temp)))
+    (is (= (parse-all variable "_") (Variable. '_)))
     (is (nil? (parse-all variable "w")))
     (is (not= (parse-all variable "W") (Variable. 'X)))))
 
@@ -65,3 +68,8 @@
                  (Functor. 'f 1)
                  (list
                    (Variable. 'W)))))))))
+
+(deftest writer-output
+  (testing "Output rendering"
+    (is (= (with-out-str (print (parse-all structure "p(Z,h(Z,W),f(W))")))
+           "p(Z h(Z W) f(W))"))))

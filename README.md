@@ -107,6 +107,7 @@ least available index basis:
 ```clojure
 (use 'wam.compiler)
 (use 'wam.grammar)
+(use 'wam.parser)
 (use 'table.core)
 
 (def term (parse-all structure "p(Z, h(Z, W), f(W))"))
@@ -114,15 +115,15 @@ least available index basis:
 ```
 evaluates as:
 ```
-+--------------------------------+-------+
-| key                            | value |
-+--------------------------------+-------+
-| wam.grammar.Structure@d2562d9f | X1    |
-| wam.grammar.Variable@d77f6b5c  | X2    |
-| wam.grammar.Structure@c8c464ec | X3    |
-| wam.grammar.Structure@b1308ecc | X4    |
-| wam.grammar.Variable@d77f7490  | X5    |
-+--------------------------------+-------+
++------------------+-------+
+| key              | value |
++------------------+-------+
+| p(Z h(Z W) f(W)) | X1    |
+| Z                | X2    |
+| h(Z W)           | X3    |
+| f(W)             | X4    |
+| W                | X5    |
++------------------+-------+
 ```
 Inspecting the structures, and indeed it matches as follows:
 

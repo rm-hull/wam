@@ -154,9 +154,8 @@
                 seen?))))))))
 
 (defn func-name [func]
-  (second (re-find #"\$(.*)@" (str func))))
+  (symbol (second (re-find #"\$(.*)@" (str func)))))
 
-(func-name unify-variable)
 
 (defn exec
   "Execute an instruction with respect to the supplied context, if
@@ -212,19 +211,6 @@
   (def x  (parse-all g/structure "p(Z, h(Z, W), f(W))") )
   (def y  (parse-all g/structure "p(f(X), h(Y, f(a)), Y)") )
   (def z  (parse-all g/structure "f(X, g(X,a))") )
-
-  (table (register-allocation y))
-  (table (register-allocation x))
-
-;  +--------------------------------+-------+
-;  | key                            | value |
-;  +--------------------------------+-------+
-;  | wam.grammar.Structure@d2562d9f | X1    |
-;  | wam.grammar.Variable@d77f6b5c  | X2    |
-;  | wam.grammar.Structure@c8c464ec | X3    |
-;  | wam.grammar.Structure@b1308ecc | X4    |
-;  | wam.grammar.Variable@d77f7490  | X5    |
-;  +--------------------------------+-------+
 
   (table' (emit-instructions query-builder x))
 
