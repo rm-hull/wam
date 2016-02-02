@@ -335,20 +335,20 @@ unification was successful.
 | 5   | [STR 1]  |
 | 6   | [STR 7]  |   <-- a1
 | 7   | f|2      |
-| 8   | [REF 14] |   <-- aX
+| 8   | [STR 11] |   <-- aX
 | 9   | [STR 3]  |
 | 10  | [STR 11] |
 | 11  | b|0      |
 | 12  | [STR 13] |   <-- a2
 | 13  | f|2      |
 | 14  | [STR 11] |
-| 15  | [REF 9]  |   <-- aY
+| 15  | [STR 3]  |   <-- aY
 +-----+----------+
 ```
 Inspecting the heap, and it becomes clear that:
 
-* dereferencing _a<sub>x</sub>_, `REF 14` → `STR 11` → `b|0`, so _X = b_
-* dereferencing _a<sub>y</sub>_, `REF 9` → `STR 3` → `g|2`, so _Y = g(X, a) = g(b, a)_
+* dereferencing _a<sub>x</sub>_, `STR 11` → `b|0`, so _X = b_
+* dereferencing _a<sub>y</sub>_, `STR 3` → `g|2`, so _Y = g(X, a) = g(b, a)_
 
 #### Exercise 2.3 (pg. 14)
 
