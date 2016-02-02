@@ -25,9 +25,11 @@
   (:require
     [clojure.test :refer :all]
     [wam.assert-helpers :refer :all]
+    [wam.anciliary :refer [unify]]
     [wam.compiler :refer :all]
     [wam.parser :refer [parse-all]]
     [wam.grammar :refer [structure]]
+    [wam.store :refer [heap registers make-context]]
     [table.core :refer :all]))
 
 (deftest check-register-allocation
@@ -115,3 +117,85 @@
        | unify_variable | X7   |      |
        | get_structure  | a|0  | X7   |
        +----------------+------+------+"))))
+
+(deftest check-compile
+  (testing "Query compilation"
+    (let [q (->>
+              "p(Z, h(Z, W), f(W))"
+              (parse-all structure)
+              (compile-term query-builder))]
+      (is (tbl= (-> (make-context) q heap)
+        "+-----+---------+
+         | key | value   |
+         +-----+---------+
+         | 0   | [STR 1] |
+         | 1   | h|2     |
+         | 2   | [REF 2] |
+         | 3   | [REF 3] |
+         | 4   | [STR 5] |
+         | 5   | f|1     |
+         | 6   | [REF 3] |
+         | 7   | [STR 8] |
+         | 8   | p|3     |
+         | 9   | [REF 2] |
+         | 10  | [STR 1] |
+         | 11  | [STR 5] |
+         +-----+---------+"))))
+
+  (testing "Sequential queries"
+    (is (tbl=
+          (->
+            (make-context)
+            (query "f(X, g(X, a))")
+            (query "f(b, Y)")
+            heap)
+          "+-----+----------+
+           | key | value    |
+           +-----+----------+
+           | 0   | [STR 1]  |
+           | 1   | a|0      |
+           | 2   | [STR 3]  |
+           | 3   | g|2      |
+           | 4   | [REF 4]  |
+           | 5   | [STR 1]  |
+           | 6   | [STR 7]  |
+           | 7   | f|2      |
+           | 8   | [REF 4]  |
+           | 9   | [STR 3]  |
+           | 10  | [STR 11] |
+           | 11  | b|0      |
+           | 12  | [STR 13] |
+           | 13  | f|2      |
+           | 14  | [STR 11] |
+           | 15  | [REF 15] |
+           +-----+----------+")))
+
+  (testing "Unification"
+    (is (tbl=
+          (->
+            (make-context)
+            (query "f(X, g(X, a))")
+            (query "f(b, Y)")
+            (unify 6 12)
+              heap)
+          "+-----+----------+
+           | key | value    |
+           +-----+----------+
+           | 0   | [STR 1]  |
+           | 1   | a|0      |
+           | 2   | [STR 3]  |
+           | 3   | g|2      |
+           | 4   | [REF 4]  |
+           | 5   | [STR 1]  |
+           | 6   | [STR 7]  |
+           | 7   | f|2      |
+           | 8   | [STR 11] |
+           | 9   | [STR 3]  |
+           | 10  | [STR 11] |
+           | 11  | b|0      |
+           | 12  | [STR 13] |
+           | 13  | f|2      |
+           | 14  | [STR 11] |
+           | 15  | [STR 3]  |
+           +-----+----------+"))))
+

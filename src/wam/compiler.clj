@@ -198,142 +198,7 @@
   (use 'table.core)
   (use 'wam.store)
 
-  ; Some helper functions to get round limitations in table
-  (defn inflate [table]
-    (let [max-cols (reduce max 0 (map count table))]
-      (map #(take max-cols (lazy-cat % (repeat nil))) table)))
-
-  (defn headers [& headers]
-    (fn [table] (cons headers table)))
-
-  (def table' (comp table inflate (headers "instr" "arg1" "arg2")))
-
-  (def x  (parse-all g/structure "p(Z, h(Z, W), f(W))") )
-  (def y  (parse-all g/structure "p(f(X), h(Y, f(a)), Y)") )
-  (def z  (parse-all g/structure "f(X, g(X,a))") )
-
-  (table' (emit-instructions query-builder x))
-
-;  +-------------------------------------------+------+------+
-;  | instr                                     | arg1 | arg2 |
-;  +-------------------------------------------+------+------+
-;  | wam.instruction_set$put_structure@14f613e | h|2  | X3   |
-;  | wam.instruction_set$set_variable@94c1c0   | X2   |      |
-;  | wam.instruction_set$set_variable@94c1c0   | X5   |      |
-;  | wam.instruction_set$put_structure@14f613e | f|1  | X4   |
-;  | wam.instruction_set$set_value@45176e      | X5   |      |
-;  | wam.instruction_set$put_structure@14f613e | p|3  | X1   |
-;  | wam.instruction_set$set_value@45176e      | X2   |      |
-;  | wam.instruction_set$set_value@45176e      | X3   |      |
-;  | wam.instruction_set$set_value@45176e      | X4   |      |
-;  +-------------------------------------------+------+------+
-
-  (table' (emit-instructions program-builder y))
-
-;  +--------------------------------------------+------+------+
-;  | instr                                      | arg1 | arg2 |
-;  +--------------------------------------------+------+------+
-;  | wam.instruction_set$get_structure@1458d55  | p|3  | X1   |
-;  | wam.instruction_set$unify_variable@1c40c01 | X2   |      |
-;  | wam.instruction_set$unify_variable@1c40c01 | X3   |      |
-;  | wam.instruction_set$unify_variable@1c40c01 | X4   |      |
-;  | wam.instruction_set$get_structure@1458d55  | f|1  | X2   |
-;  | wam.instruction_set$unify_variable@1c40c01 | X5   |      |
-;  | wam.instruction_set$get_structure@1458d55  | h|2  | X3   |
-;  | wam.instruction_set$unify_value@f92e0d     | X4   |      |
-;  | wam.instruction_set$unify_variable@1c40c01 | X6   |      |
-;  | wam.instruction_set$get_structure@1458d55  | f|1  | X6   |
-;  | wam.instruction_set$unify_variable@1c40c01 | X7   |      |
-;  | wam.instruction_set$get_structure@1458d55  | a|0  | X7   |
-;  +--------------------------------------------+------+------+
-
 (def ctx (make-context))
-
-(def query0
-  (->>
-    "p(Z, h(Z, W), f(W))"
-    (parse-all g/structure)
-    (compile-term query-builder)))
-
-(-> ctx query0 heap table)
-
-;  +-----+---------+
-;  | key | value   |
-;  +-----+---------+
-;  | 0   | [STR 1] |
-;  | 1   | h|2     |
-;  | 2   | [REF 2] |
-;  | 3   | [REF 3] |
-;  | 4   | [STR 5] |
-;  | 5   | f|1     |
-;  | 6   | [REF 3] |
-;  | 7   | [STR 8] |
-;  | 8   | p|3     |
-;  | 9   | [REF 2] |
-;  | 10  | [STR 1] |
-;  | 11  | [STR 5] |
-;  +-----+---------+
-
-(def ctx1
-(->
-  ctx
-  (query "f(X, g(X, a))")
-  (query "f(b, Y)")))
-
- (->
-  ctx1
-  heap
-  table
-  )
-
-
-;  +-----+----------+
-;  | key | value    |
-;  +-----+----------+
-;  | 0   | [STR 1]  |
-;  | 1   | a|0      |
-;  | 2   | [STR 3]  |
-;  | 3   | g|2      |
-;  | 4   | [REF 4]  |
-;  | 5   | [STR 1]  |
-;  | 6   | [STR 7]  |   <-- a1
-;  | 7   | f|2      |
-;  | 8   | [REF 4]  |   <-- aX
-;  | 9   | [STR 3]  |
-;  | 10  | [STR 11] |
-;  | 11  | b|0      |
-;  | 12  | [STR 13] |   <-- a2
-;  | 13  | f|2      |
-;  | 14  | [STR 11] |
-;  | 15  | [REF 15] |   <-- aY
-;  +-----+----------+
-
-  (->
-    ctx1
-    (unify 6 12)
-    heap
-    table)
-
-;  +-----+----------+
-;  | key | value    |
-;  +-----+----------+
-;  | 0   | [STR 1]  |
-;  | 1   | a|0      |
-;  | 2   | [STR 3]  |
-;  | 3   | g|2      |
-;  | 4   | [REF 4]  |
-;  | 5   | [STR 1]  |
-;  | 6   | [STR 7]  |   <-- a1
-;  | 7   | f|2      |
-;  | 8   | [REF 14] |   <-- aX
-;  | 9   | [STR 3]  |
-;  | 10  | [STR 11] |
-;  | 11  | b|0      |
-;  | 12  | [STR 13] |   <-- a2
-;  | 13  | f|2      |
-;  | 14  | [STR 11] |
-;  | 15  | [REF 9]  |   <-- aY
-;  +-----+----------+
 
 (defn tee [v func]
   (func v)
@@ -454,8 +319,18 @@
 
   (program "father(richard, henry)")
   (tee (comp table heap))
+  (tee (comp table registers)))
+
+(->
+  ctx
+  (assoc :trace true)
+  (query "father(R, henry)")
+  (tee (comp table heap))
   (tee (comp table registers))
-  )
+
+  (program "father(henry, richard)")
+  (tee (comp table heap))
+  (tee (comp table registers)))
 
   (table (register-allocation (parse-all g/structure "father(R, henry)")))
 (->
@@ -470,6 +345,8 @@
   (tee (comp table registers))
   )
 
+  (table (register-allocation (parse-all g/structure "father(richard, J)")))
+  (table (register-allocation (parse-all g/structure "father(W, K)")))
 )
 
 
