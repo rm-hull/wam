@@ -31,6 +31,46 @@
 
 (def ctx (s/make-context))
 
+(deftest check-set-value
+  (testing "set-value"
+    (let [new-ctx (->
+                    ctx
+                    (s/set-register 'X3 27)
+                    (set-value 'X3))]
+      (is (= (s/pointer new-ctx :h) 1))
+      (is (= (s/get-store new-ctx 0) 27)))))
+
+(deftest check-set-variable
+  (testing "set-variable"
+    (let [new-ctx (->
+                    ctx
+                    (s/set-register 'X4 55)
+                    (set-variable 'X4))]
+      (is (= (s/pointer new-ctx :h) 1))
+      (is (= (s/get-store new-ctx 0) ['REF 0]))
+      (is (= (s/get-register new-ctx 'X4) ['REF 0])))))
+
+(deftest check-put-structure
+  (testing "put-structure"
+    (let [new-ctx (->
+                    ctx
+                    (put-structure 'f|n 'X3))]
+      (is (= (s/pointer new-ctx :h) 2))
+      (is (= (s/get-store new-ctx 0) ['STR 1]))
+      (is (= (s/get-store new-ctx 1) 'f|n))
+      (is (= (s/get-register new-ctx 'X3) ['STR 1])))))
+
+(deftest check-get-structure
+  (testing "get-structure")
+  )
+
+(deftest check-unify-variable
+  (testing "unify-variable"
+    (let [new-ctx (->
+                    ctx
+                    (put-structure 'f|n 'X3))]
+    )))
+
 (deftest ex2.1
   ; Compiled code for L0 query ?-p(Z,h(Z,W),f(W)).
 
