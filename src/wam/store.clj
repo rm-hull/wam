@@ -22,7 +22,8 @@
 
 
 (ns wam.store
-  (:require [clojure.string :refer [split]]))
+  (:require [table.core :refer [table table-str]])
+  (:require [clojure.string :refer [split-lines]]))
 
 (def ^:private supported-modes #{:read :write})
 (def ^:private supported-pointers #{:h :s :x})
@@ -100,4 +101,13 @@
   (if (supported-modes new-mode)
     (assoc ctx :mode new-mode)
     (throw (IllegalArgumentException. (str "Unsupported mode " new-mode)))))
+
+(defn diag [ctx]
+  (let [inflate (fn [data] (lazy-cat data (repeat nil)))
+        heap (split-lines (table-str (heap ctx) :style :unicode ))
+        regs (inflate (split-lines (table-str (registers ctx) :style :unicode)))
+        vars (inflate (split-lines (table-str (variables ctx) :style :unicode)))
+        data (map list heap regs vars)]
+    (table (cons ["Heap" "Registers" "Variables"] data) :style :borderless))
+  ctx)
 

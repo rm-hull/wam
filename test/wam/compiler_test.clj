@@ -30,8 +30,7 @@
     [wam.compiler :refer :all]
     [wam.parser :refer [parse-all]]
     [wam.grammar :refer [structure]]
-    [wam.store :refer [heap registers variables make-context]]
-    [table.core :refer :all]))
+    [wam.store :refer [heap registers variables make-context diag]]))
 
 (deftest check-register-allocation
   (testing "Register allocation"
@@ -205,19 +204,6 @@
            | 14  | [STR 11] |
            | 15  | [STR 3]  |
            +-----+----------+"))))
-
-(defn inflate [data]
-  (lazy-cat data (repeat nil)))
-
-
-(defn diag [ctx]
-  (let [heap (s/split-lines (table-str (heap ctx) :style :unicode ))
-        regs (inflate (s/split-lines (table-str (registers ctx) :style :unicode)))
-        vars (inflate (s/split-lines (table-str (variables ctx) :style :unicode)))
-        data (map list heap regs vars)]
-
-    (table (cons ["Heap" "Registers" "Variables"] data) :style :borderless))
-  ctx)
 
 
 (->
