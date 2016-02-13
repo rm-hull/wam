@@ -27,10 +27,17 @@
     [clojure.string :refer [split]]
     [wam.store :as s]))
 
-(defn ^:private arity
+(def ^:private arity
   "Determine the arity given a functor symbol representation"
-  [functor]
-  (-> functor name (split #"\|") second (Integer/parseInt)))
+  (memoize
+    (fn [functor]
+      (-> functor name (split #"\|") second (Integer/parseInt)))))
+
+
+(def cell-type
+  "Convenience wrapper to obtain the cell type"
+  first)
+
 
 (def cell-value
   "Convenience wrapper to obtain the cell value"
@@ -39,17 +46,24 @@
 (defn ^:private cell-type?
   "Function maker to determine if a cell is of a given type,
    presently the known types are REF (reference) or STR (structure)."
-  [type]
-  (fn [tag]
-    (and (coll? tag) (= (first tag) type))))
+  [allowed-types]
+  (fn [cell]
+    (and
+      (coll? cell)
+      (= (count cell) 2)
+      (contains? allowed-types (cell-type cell)))))
 
 (def ref?
   "Convenience wrapper for REF cell types"
-  (cell-type? 'REF))
+  (cell-type? #{'REF}))
 
 (def str?
   "Convenience wrapper for STR cell types"
-  (cell-type? 'STR))
+  (cell-type? #{'STR}))
+
+(def cell?
+  "Convenience wrapper for any cell types"
+  (cell-type? #{'REF 'STR}))
 
 (defn deref
   "Follows a possible reference chain until it reaches either an unbound REF
@@ -60,7 +74,7 @@
     (deref ctx (s/register-address ctx addr))
     (let [cell (s/get-store ctx addr)]
       (cond
-        (not (seq? cell))
+        (not (cell? cell))
         addr
 
         (and (ref? cell) (not= (cell-value cell) addr))
@@ -87,8 +101,8 @@
   [ctx a1 a2]
   (let [cell1 (s/get-store ctx a1)
         cell2 (s/get-store ctx a2)]
-;    (if (and (ref? cell1) (or (not (ref? cell2)) (< a2 a1)))
-    (if (and (ref? cell1) (not (ref? cell2)))
+    (if (and (ref? cell1) (or (not (ref? cell2)) (< a2 a1)))
+;    (if (and (ref? cell1) (not (ref? cell2)))
       (s/set-store ctx a1 cell2)
       (s/set-store ctx a2 cell1))))
 
