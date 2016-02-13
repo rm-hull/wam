@@ -159,7 +159,7 @@
   (if-not (:fail ctx)
     (do
       (when (:trace ctx)
-        (println (func-name instr) args))
+        (println (func-name instr) (s/join ", " args)))
       (apply instr ctx args))
     ctx))
 
