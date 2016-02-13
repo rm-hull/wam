@@ -6,7 +6,7 @@
     :url "http://opensource.org/licenses/MIT"}
   :dependencies [
     [org.clojure/clojure "1.8.0"]
-    [table "0.4.0"]]
+    [table "0.5.0"]]
   :scm {:url "git@github.com:rm-hull/wam.git"}
   :plugins [
     [codox "0.9.1"] ]
