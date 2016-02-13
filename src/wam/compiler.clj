@@ -60,12 +60,6 @@
     (bfs term)
     (register-names 'X)))
 
-(defn functor
-  "Extracts the functor from a structure, and creates as a
-   symbol suitable for consumption within the instruction set."
-  [structure]
-  (-> structure :functor pr-str symbol))
-
 (def query-builder
   {:structure-walker
    dfs-post-order
@@ -76,7 +70,7 @@
        (list set-value register)
        (cond
          (instance? wam.grammar.Structure term)
-         (list put-structure (functor term) register)
+         (list put-structure (:functor term) register)
 
          (instance? wam.grammar.Variable term)
          (list set-variable register)
@@ -94,7 +88,7 @@
          (instance? wam.grammar.Structure term)
          (if arg?
            (list unify-variable register)
-           (list get-structure (functor term) register))
+           (list get-structure (:functor term) register))
 
          (instance? wam.grammar.Variable term)
          (if (seen? term)

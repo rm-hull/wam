@@ -27,17 +27,18 @@
     [clojure.string :refer [split]]
     [wam.store :as s]))
 
-(def ^:private arity
-  "Determine the arity given a functor symbol representation"
+(def arity
+  "Determine the arity given a functor (as either a symbol or a
+   wam.grammar.Functor) representation"
   (memoize
     (fn [functor]
-      (-> functor name (split #"\|") second (Integer/parseInt)))))
-
+      (if (symbol? functor)
+        (-> functor name (split #"\|") second (Integer/parseInt))
+        (:arg-count functor)))))
 
 (def cell-type
   "Convenience wrapper to obtain the cell type"
   first)
-
 
 (def cell-value
   "Convenience wrapper to obtain the cell value"
