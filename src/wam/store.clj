@@ -24,16 +24,26 @@
 (ns wam.store
   (:require [clojure.string :refer [split]]))
 
+(def ^:private supported-modes #{:read :write})
+(def ^:private supported-pointers #{:h :s :x})
+(def ^:private supports-incrementing #{:h :s})
+(def ^:private heap-start 0)
+(def ^:private register-start 1000)
+
 (def ^:private register-number
   (memoize
     (fn [Xi]
       (->> Xi str (re-find #"\d+") Integer/parseInt))))
 
 (defn pointer [ctx ptr]
-  (get-in ctx [:pointer ptr]))
+  (if (supported-pointers ptr)
+    (get-in ctx [:pointer ptr])
+    (throw (IllegalArgumentException. (str "Unsuported pointer " ptr)))))
 
 (defn increment [ctx ptr]
-  (update-in ctx [:pointer ptr] inc))
+  (if (supports-incrementing ptr)
+    (update-in ctx [:pointer ptr] inc)
+    (throw (IllegalArgumentException. (str "Unsuported pointer " ptr)))))
 
 (defn register-address [ctx Xi]
   (+ (register-number Xi) (pointer ctx :x)))
@@ -52,14 +62,14 @@
   (let [addr (register-address ctx Xi)]
     (set-store ctx addr v)))
 
-(def heap-start 0)
-(def register-start 1000)
-
 (defn make-context []
   { :fail false
     :mode :read
-    :pointer {:h heap-start :s heap-start :x register-start}
-    :store (sorted-map) })
+    :pointer {
+      :h heap-start
+      :s heap-start      ; FIXME: is this offset correct?
+      :x register-start}
+    :store {} })
 
 (defn heap [ctx]
   (->>
@@ -72,14 +82,21 @@
   (->>
     ctx
     :store
-;    (filter (fn [[k v]] (and (>= k heap-start) (< k register-start))))
     (filter (fn [[k v]] (>= k register-start)))
     (map (fn [[k v]] [(symbol (str "X" (- k register-start))) v]))
+    (into (sorted-map))))
+
+(defn variables [ctx]
+  (->>
+    ctx
+    :variables
     (into {})))
 
 (defn fail [ctx]
   (assoc ctx :fail true))
 
 (defn mode [ctx new-mode]
-  (assoc ctx :mode new-mode))
+  (if (supported-modes new-mode)
+    (assoc ctx :mode new-mode)
+    (throw (IllegalArgumentException. (str "Unsupported mode " new-mode)))))
 
