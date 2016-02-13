@@ -102,7 +102,6 @@
   (let [cell1 (s/get-store ctx a1)
         cell2 (s/get-store ctx a2)]
     (if (and (ref? cell1) (or (not (ref? cell2)) (< a2 a1)))
-;    (if (and (ref? cell1) (not (ref? cell2)))
       (s/set-store ctx a1 cell2)
       (s/set-store ctx a2 cell1))))
 
@@ -119,7 +118,7 @@
          stack (-> [] (push a1) (push a2))]
 
     (if (or fail (empty? stack))
-      (assoc ctx :fail fail)
+      (s/fail ctx fail)
       (let [d1 (deref ctx (peek stack))
             d2 (deref ctx (peek (pop stack)))
             stack (pop (pop stack))]

@@ -92,8 +92,9 @@
     :variables
     (into {})))
 
-(defn fail [ctx]
-  (assoc ctx :fail true))
+(defn fail
+  ([ctx] (fail ctx true))
+  ([ctx status] (assoc ctx :fail status)))
 
 (defn mode [ctx new-mode]
   (if (supported-modes new-mode)

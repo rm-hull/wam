@@ -39,8 +39,10 @@
 (deftest check-fail
   (testing "Fail instruction"
     (let [ctx (make-context)]
-      (is (= (ctx :fail) false))
-      (is (= ((fail ctx) :fail) true)))))
+      (is (false? (ctx :fail)))
+      (is (true? ((fail ctx) :fail)))
+      (is (true? ((fail ctx true) :fail)))
+      (is (false? ((fail ctx false) :fail))))))
 
 (deftest check-pointer-access
   (testing "Pointer access"
