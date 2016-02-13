@@ -48,6 +48,8 @@
   (testing "Pointer access"
     (let [ctx (make-context)]
       (is (= (pointer ctx :h) 0))
+      (is (= (pointer ctx :s) 0))
+      (is (= (pointer ctx :x) 1000))
       (is (thrown? IllegalArgumentException (pointer ctx nil)))
       (is (thrown? IllegalArgumentException (pointer ctx :banana))))))
 

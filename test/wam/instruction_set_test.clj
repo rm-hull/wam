@@ -62,14 +62,93 @@
 
 (deftest check-get-structure
   (testing "get-structure")
-  )
+    (let [ctx (->
+                ctx
+                (s/set-store 0 ['REF 3])
+                (s/set-store 1 ['STR 2])
+                (s/set-store 2 'f|0)
+                (s/set-store 3 ['REF 3])
+                (assoc-in [:pointer :h] 4)
+                (s/set-register 'X1 ['REF 0])
+                (s/set-register 'X2 ['REF 1])
+                (s/set-register 'X3 ['REF 2]))]
+
+      (testing "REF"
+        (let [new-ctx (get-structure ctx 'g|2 'X1)]
+          (is (= (s/pointer new-ctx :h) 6))
+          (is (= (:mode new-ctx) :write))
+          (is (= (s/get-store new-ctx 3) ['STR 5]))
+          (is (= (s/get-store new-ctx 4) ['STR 5]))
+          (is (= (s/get-store new-ctx 5) 'g|2))))
+
+      (testing "STR (fail)"
+        (let [new-ctx (get-structure ctx 'g|2 'X2)]
+          (is (true? (:fail new-ctx)))))
+
+      (testing "STR (match)"
+        (let [new-ctx (get-structure ctx 'f|0 'X2)]
+          (is (= (get-in new-ctx [:pointer :s]) 3))
+          (is (= (:mode new-ctx) :read))
+          (is (false? (:fail new-ctx)))))
+
+      (testing "no match"
+        (let [new-ctx (get-structure ctx 'g|2 'X3)]
+          (is (true? (:fail new-ctx)))))))
 
 (deftest check-unify-variable
   (testing "unify-variable"
-    (let [new-ctx (->
-                    ctx
-                    (put-structure 'f|n 'X3))]
-    )))
+    (testing "read-mode"
+      (let [new-ctx (->
+                      ctx
+                      (s/mode :read)
+                      (s/set-store 0 ['REF 3])
+                      (unify-variable 'X1))]
+        (is (= (s/get-register new-ctx 'X1) ['REF 3]))
+        (is (= (s/pointer new-ctx :s) 1))))
+
+    (testing "write-mode"
+      (let [new-ctx (->
+                      ctx
+                      (s/mode :write)
+                      (assoc-in [:pointer :h] 2)
+                      (assoc-in [:pointer :s] 5)
+                      (unify-variable 'X1))]
+        (is (= (s/get-store new-ctx 2) ['REF 2]))
+        (is (= (s/get-register new-ctx 'X1) ['REF 2]))
+        (is (= (s/pointer new-ctx :h) 3))
+        (is (= (s/pointer new-ctx :s) 6))))
+
+    (testing "unknown mode"
+      (is (thrown? IllegalArgumentException
+                   (->
+                     ctx
+                     (assoc :mode :banana)
+                     (unify-variable 'X5)))))))
+
+(deftest check-unify-value
+  (testing "unify-value"
+    (testing "read-mode"
+      ;; TODO
+      )
+
+    (testing "write-mode"
+      (let [new-ctx (->
+                      ctx
+                      (s/mode :write)
+                      (assoc-in [:pointer :h] 9)
+                      (assoc-in [:pointer :s] 3)
+                      (s/set-register 'X2 ['STR 1])
+                      (unify-value 'X2))]
+        (is (= (s/get-store new-ctx 9) ['STR 1]))
+        (is (= (s/pointer new-ctx :h) 10))
+        (is (= (s/pointer new-ctx :s) 4))))
+
+    (testing "unknown mode"
+      (is (thrown? IllegalArgumentException
+                   (->
+                     ctx
+                     (assoc :mode :banana)
+                     (unify-value 'X5)))))))
 
 (deftest ex2.1
   ; Compiled code for L0 query ?-p(Z,h(Z,W),f(W)).
