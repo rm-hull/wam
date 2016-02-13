@@ -90,7 +90,7 @@
   (->>
     ctx
     :variables
-    (into {})))
+    (into (sorted-map))))
 
 (defn fail
   ([ctx] (fail ctx true))

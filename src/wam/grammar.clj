@@ -25,10 +25,27 @@
   (:require
     [wam.parser :refer :all]))
 
-(defrecord Constant [value] Object (toString [this] (with-out-str (pr this))))
-(defrecord Variable [name] Object (toString [this] (with-out-str (pr this))))
-(defrecord Structure [functor args] Object (toString [this] (with-out-str (pr this))))
-(defrecord Functor [name arg-count] Object (toString [this] (with-out-str (pr this))))
+(defrecord Constant [value]
+  Object
+  (toString [this] (with-out-str (pr this)))
+
+  Comparable
+  (compareTo [this other] (compare (:value this) (:value other))))
+
+(defrecord Variable [name]
+  Object
+  (toString [this] (with-out-str (pr this)))
+
+  Comparable
+  (compareTo [this other] (compare (:name this) (:name other))))
+
+(defrecord Structure [functor args]
+  Object
+  (toString [this] (with-out-str (pr this))))
+
+(defrecord Functor [name arg-count]
+  Object
+  (toString [this] (with-out-str (pr this))))
 
 (defmethod print-method Structure [x ^java.io.Writer writer]
   (print-method (-> x :functor :name) writer)
