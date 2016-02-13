@@ -132,5 +132,5 @@
     :write
     (->
       ctx
-      (set-value Xi))
-      (s/increment :s)))
+      (set-value Xi)
+      (s/increment :s))))
