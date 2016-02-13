@@ -108,10 +108,10 @@
   (loop [args (:args structure)
          seen? seen?
          result [(instruction-builder
-                      structure
-                      (register-allocation structure)
-                      seen?
-                      false)]]
+                    structure
+                    (register-allocation structure)
+                    seen?
+                    false)]]
     (if (empty? args)
       result
       (recur
@@ -132,10 +132,9 @@
    programs, and post-order for queries), and emits the most
    appropriate instructions for each structure, which is reliant on
    which arguments have been previously processed."
-  [builder term]
+  [builder term register-allocation]
   (let [structure-walker (:structure-walker builder)
-        instruction-builder (:instruction-builder builder)
-        register-allocation (register-allocation term)]
+        instruction-builder (:instruction-builder builder)]
     (loop [structures (structure-walker term)
            seen? #{}
            result []]
@@ -170,14 +169,21 @@
       (apply instr ctx args))
     ctx))
 
+(defn assoc-variables [ctx register-allocation]
+  (->>
+    register-allocation
+    (filter #(instance? wam.grammar.Variable (first %)))
+    (update ctx :variables concat)))
+
 (defn compile-term
   "Emits a sequence of instructions that equates to provided term according
    to the rules of the builder. Returns a function which is capable of
    executing the instructions given a context."
   [builder term]
-  (let [instrs (emit-instructions builder term)]
+  (let [register-allocation (register-allocation term)
+        instrs (emit-instructions builder term register-allocation)]
     (fn [ctx]
-      (reduce exec ctx instrs))))
+      (reduce exec (assoc-variables ctx register-allocation) instrs))))
 
 (defn query [ctx expression]
   (let [executor (->>
@@ -208,15 +214,15 @@
 (->
   ctx
   ; p(Z, h(Z, W), f(W))
-  (put-structure 'h|2, 'X3)
-  (set-variable 'X2)
-  (set-variable 'X5)
-  (put-structure 'f|1, 'X4)
-  (set-value 'X5)
-  (put-structure 'p|3, 'X1)
-  (set-value 'X2)
-  (set-value 'X3)
-  (set-value 'X4)
+  (put-structure 'h|2, 'X3)  ;X3 = h
+  (set-variable 'X2)         ; Z
+  (set-variable 'X5)         ; W
+  (put-structure 'f|1, 'X4)  ;X4 = f
+  (set-value 'X5)            ; W
+  (put-structure 'p|3, 'X1)  ;X1 = p
+  (set-value 'X2)            ; Z
+  (set-value 'X3)            ; X3
+  (set-value 'X4)            ; X4
 
   (tee (comp table heap))
   (tee (comp table registers))

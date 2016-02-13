@@ -23,13 +23,14 @@
 
 (ns wam.compiler-test
   (:require
+    [clojure.string :as s]
     [clojure.test :refer :all]
     [wam.assert-helpers :refer :all]
     [wam.anciliary :refer [unify]]
     [wam.compiler :refer :all]
     [wam.parser :refer [parse-all]]
     [wam.grammar :refer [structure]]
-    [wam.store :refer [heap registers make-context]]
+    [wam.store :refer [heap registers variables make-context]]
     [table.core :refer :all]))
 
 (deftest check-register-allocation
@@ -70,53 +71,59 @@
 
 (deftest check-query-builder
   (testing "Query builder"
-    (is (instr= (emit-instructions query-builder (parse-all structure "f(X, g(X,a))"))
-      "+---------------+------+------+
-       | instr         | arg1 | arg2 |
-       +---------------+------+------+
-       | put_structure | a|0  | X4   |
-       | put_structure | g|2  | X3   |
-       | set_variable  | X2   |      |
-       | set_value     | X4   |      |
-       | put_structure | f|2  | X1   |
-       | set_value     | X2   |      |
-       | set_value     | X3   |      |
-       +---------------+------+------+"))
+    (let [term (parse-all structure "f(X, g(X,a))")
+          register-allocation (register-allocation term)]
+      (is (instr= (emit-instructions query-builder term register-allocation)
+        "+---------------+------+------+
+         | instr         | arg1 | arg2 |
+         +---------------+------+------+
+         | put_structure | a|0  | X4   |
+         | put_structure | g|2  | X3   |
+         | set_variable  | X2   |      |
+         | set_value     | X4   |      |
+         | put_structure | f|2  | X1   |
+         | set_value     | X2   |      |
+         | set_value     | X3   |      |
+         +---------------+------+------+")))
 
-    (is (instr= (emit-instructions query-builder (parse-all structure "p(Z, h(Z, W), f(W))"))
-      "+---------------+------+------+
-       | instr         | arg1 | arg2 |
-       +---------------+------+------+
-       | put_structure | h|2  | X3   |
-       | set_variable  | X2   |      |
-       | set_variable  | X5   |      |
-       | put_structure | f|1  | X4   |
-       | set_value     | X5   |      |
-       | put_structure | p|3  | X1   |
-       | set_value     | X2   |      |
-       | set_value     | X3   |      |
-       | set_value     | X4   |      |
-       +---------------+------+------+"))))
+    (let [term (parse-all structure "p(Z, h(Z, W), f(W))")
+          register-allocation (register-allocation term)]
+      (is (instr= (emit-instructions query-builder term register-allocation)
+        "+---------------+------+------+
+         | instr         | arg1 | arg2 |
+         +---------------+------+------+
+         | put_structure | h|2  | X3   |
+         | set_variable  | X2   |      |
+         | set_variable  | X5   |      |
+         | put_structure | f|1  | X4   |
+         | set_value     | X5   |      |
+         | put_structure | p|3  | X1   |
+         | set_value     | X2   |      |
+         | set_value     | X3   |      |
+         | set_value     | X4   |      |
+         +---------------+------+------+")))))
 
 (deftest check-program-builder
   (testing "Program builder"
-    (is (instr= (emit-instructions program-builder (parse-all structure "p(f(X), h(Y, f(a)), Y)"))
-      "+----------------+------+------+
-       | instr          | arg1 | arg2 |
-       +----------------+------+------+
-       | get_structure  | p|3  | X1   |
-       | unify_variable | X2   |      |
-       | unify_variable | X3   |      |
-       | unify_variable | X4   |      |
-       | get_structure  | f|1  | X2   |
-       | unify_variable | X5   |      |
-       | get_structure  | h|2  | X3   |
-       | unify_value    | X4   |      |
-       | unify_variable | X6   |      |
-       | get_structure  | f|1  | X6   |
-       | unify_variable | X7   |      |
-       | get_structure  | a|0  | X7   |
-       +----------------+------+------+"))))
+    (let [term (parse-all structure "p(f(X), h(Y, f(a)), Y)")
+          register-allocation (register-allocation term)]
+      (is (instr= (emit-instructions program-builder term register-allocation)
+        "+----------------+------+------+
+         | instr          | arg1 | arg2 |
+         +----------------+------+------+
+         | get_structure  | p|3  | X1   |
+         | unify_variable | X2   |      |
+         | unify_variable | X3   |      |
+         | unify_variable | X4   |      |
+         | get_structure  | f|1  | X2   |
+         | unify_variable | X5   |      |
+         | get_structure  | h|2  | X3   |
+         | unify_value    | X4   |      |
+         | unify_variable | X6   |      |
+         | get_structure  | f|1  | X6   |
+         | unify_variable | X7   |      |
+         | get_structure  | a|0  | X7   |
+         +----------------+------+------+")))))
 
 (deftest check-compile
   (testing "Query compilation"
@@ -177,7 +184,7 @@
             (query "f(X, g(X, a))")
             (query "f(b, Y)")
             (unify 6 12)
-              heap)
+            heap)
           "+-----+----------+
            | key | value    |
            +-----+----------+
@@ -198,4 +205,26 @@
            | 14  | [STR 11] |
            | 15  | [STR 3]  |
            +-----+----------+"))))
+
+(defn inflate [data]
+  (lazy-cat data (repeat nil)))
+
+
+(defn diag [ctx]
+  (let [heap (s/split-lines (table-str (heap ctx) :style :unicode ))
+        regs (inflate (s/split-lines (table-str (registers ctx) :style :unicode)))
+        vars (inflate (s/split-lines (table-str (variables ctx) :style :unicode)))
+        data (map list heap regs vars)]
+
+    (table (cons ["Heap" "Registers" "Variables"] data) :style :borderless))
+  ctx)
+
+
+(->
+  (make-context)
+  (query "f(X, g(X, a))")
+  (query "f(b, Y)")
+  (unify 12 6)
+  diag
+  )
 
