@@ -22,8 +22,9 @@
 
 
 (ns wam.store
-  (:require [table.core :refer [table table-str]])
-  (:require [clojure.string :refer [split-lines]]))
+  (:require
+    [table.core :refer [table table-str]]
+    [clojure.string :refer [split-lines]]))
 
 (def ^:private supported-modes #{:read :write})
 (def ^:private supported-pointers #{:h :s :x})
