@@ -24,7 +24,7 @@
 (ns wam.anciliary
   (:refer-clojure :exclude [deref])
   (:require
-    [clojure.string :refer [split]]
+    [clojure.string :refer [split join]]
     [wam.store :as s]))
 
 (def arity
@@ -136,3 +136,23 @@
                 (if (= f|N1 f|N2)
                   (recur ctx fail (push-args stack (arity f|N1) v1 v2))
                   (recur ctx true stack))))))))))
+
+
+
+(declare resolve-struct)
+
+(defn- resolve-functor [ctx addr]
+  (let [functor (s/get-store ctx addr)
+        process-args (fn []
+                       (for [i (range (arity functor))]
+                         (resolve-struct ctx (+ addr i 1))))
+        decorate (fn [coll] (if (seq coll) (str "(" (join ", " coll) ")")))]
+    (str (:name functor) (decorate (process-args)))))
+
+
+(defn resolve-struct [ctx addr]
+  (let [v (s/get-store ctx (deref ctx addr))]
+    (if (str? v)
+      (resolve-functor ctx (cell-value v))
+      (throw (IllegalArgumentException. "No structure at address" addr)))))
+
