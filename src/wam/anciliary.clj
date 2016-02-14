@@ -24,17 +24,9 @@
 (ns wam.anciliary
   (:refer-clojure :exclude [deref])
   (:require
-    [clojure.string :refer [split join]]
-    [wam.store :as s]))
-
-(def arity
-  "Determine the arity given a functor (as either a symbol or a
-   wam.grammar.Functor) representation"
-  (memoize
-    (fn [functor]
-      (if (symbol? functor)
-        (-> functor name (split #"\|") second (Integer/parseInt))
-        (:arg-count functor)))))
+    [clojure.string :refer [join]]
+    [wam.store :as s]
+    [wam.functor :as f]))
 
 (def cell-type
   "Convenience wrapper to obtain the cell type"
@@ -134,7 +126,7 @@
                     f|N1 (s/get-store ctx v1)
                     f|N2 (s/get-store ctx v2)]
                 (if (= f|N1 f|N2)
-                  (recur ctx fail (push-args stack (arity f|N1) v1 v2))
+                  (recur ctx fail (push-args stack (f/arity f|N1) v1 v2))
                   (recur ctx true stack))))))))))
 
 
@@ -144,10 +136,10 @@
 (defn- resolve-functor [ctx addr]
   (let [functor (s/get-store ctx addr)
         process-args (fn []
-                       (for [i (range (arity functor))]
+                       (for [i (range (f/arity functor))]
                          (resolve-struct ctx (+ addr i 1))))
         decorate (fn [coll] (if (seq coll) (str "(" (join ", " coll) ")")))]
-    (str (:name functor) (decorate (process-args)))))
+    (str (f/name functor) (decorate (process-args)))))
 
 
 (defn resolve-struct [ctx addr]
