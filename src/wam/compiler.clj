@@ -147,23 +147,6 @@
                 register-allocation
                 seen?))))))))
 
-(defn func-name [func]
-  (symbol (second (re-find #"\$(.*)@" (str func)))))
-
-
-(defn exec
-  "Execute an instruction with respect to the supplied context, if
-   the fail flag has not been set. If the context has failed, then
-   just return the context unchanged (i.e. don't execute the instruction).
-   This causes the remaining instructions to also fall through."
-  [ctx [instr & args]]
-  (if-not (:fail ctx)
-    (do
-      (when (:trace ctx)
-        (println (func-name instr) (s/join ", " args)))
-      (apply instr ctx args))
-    ctx))
-
 (defn assoc-variables [ctx register-allocation]
   (->>
     register-allocation
@@ -178,7 +161,7 @@
   (let [register-allocation (register-allocation term)
         instrs (emit-instructions builder term register-allocation)]
     (fn [ctx]
-      (reduce exec (assoc-variables ctx register-allocation) instrs))))
+      (call (assoc-variables ctx register-allocation) instrs))))
 
 (defn query [ctx expression]
   (let [executor (->>

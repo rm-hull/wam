@@ -533,7 +533,13 @@ Z = f(f(a))
 
 ## Language ℒ₁
 
-TOOD
+#### Exercise 2.6 (pg. 18)
+
+> Verify that the effect of executing thr sequence of ℳ₁ instructions
+> shown in Figure 2.9 produces the same heap representation as that produced by
+> the ℳ₀ code of Figure 2.3 (see [Exercise 2.1](#exercise-21-pg-9)).
+
+
 
 ## References
 

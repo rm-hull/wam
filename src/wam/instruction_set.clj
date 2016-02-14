@@ -24,7 +24,7 @@
 ;; ℳ₀ machine instructions
 (ns wam.instruction-set
   (:require
-    [clojure.string :refer [split]]
+    [clojure.string :refer [join]]
     [wam.anciliary :as a]
     [wam.store :as s]))
 
@@ -134,3 +134,103 @@
       ctx
       (set-value Xi)
       (s/increment :s))))
+
+
+(defn put-variable [ctx Xn Ai]
+  (let [h (s/pointer ctx :h)
+        v ['REF h]]
+    (->
+      ctx
+      (s/set-store h v)
+      (s/set-register Ai v)
+      (s/set-register Xn v)
+      (s/increment :h))))
+
+(defn put-value [ctx Xn Ai]
+  (s/set-register ctx Ai (s/get-register ctx Xn)))
+
+(defn get-variable [ctx Xn Ai]
+  (s/set-register ctx Xn (s/get-register ctx Ai)))
+
+(defn get-value [ctx Xn Ai]
+  (a/unify ctx Xn Ai))
+
+(defn func-name [func]
+  (second (re-find #"\$(.*)@" (str func))))
+
+(defn single-step
+  "Execute an instruction with respect to the supplied context, if
+   the fail flag has not been set. If the context has failed, then
+   just return the context unchanged (i.e. don't execute the instruction).
+   This causes the remaining instructions to also fall through."
+  [ctx [instr & args]]
+  (if-not (:fail ctx)
+    (do
+      (when (:trace ctx)
+        (println (func-name instr) (join ", " args)))
+      (apply instr ctx args))
+    ctx))
+
+(defn call [ctx p|N]
+    (reduce single-step ctx p|N))
+
+(defn proceed [ctx]
+  ctx
+  )
+
+(comment
+  (defn tee [v func]
+    (func v)
+    v)
+
+  (def p|3
+    (list
+      (list get-structure 'f|1, 'A1)
+      (list unify-variable 'X4)
+      (list get-structure 'h|2, 'A2)
+      (list unify-variable 'X5)
+      (list unify-variable 'X6)
+      (list get-value 'X5, 'A3)
+      (list get-structure 'f|1, 'X6)
+      (list unify-variable 'X7)
+      (list get-structure 'a|0, 'X7)
+      (list proceed)))
+
+  (->
+    (s/make-context)
+    (assoc :trace true)
+    (put-variable 'X4, 'A1)
+    (put-structure 'h|2, 'A2)
+    (set-value 'X4)
+    (set-variable 'X5)
+    (put-structure 'f|1, 'A3)
+    (set-value 'X5)
+    (call p|3)
+    s/diag
+    )
+
+; Heap                Registers           Variables
+; -------------------------------------------------
+; ┌─────┬──────────┐  ┌─────┬──────────┐  ┌───────┐
+; │ key │ value    │  │ key │ value    │  │ value │
+; ├─────┼──────────┤  ├─────┼──────────┤  ├───────┤
+; │ 0   ╎ [STR 9]  │  │ X1  ╎ [REF 0]  │  └───────┘
+; │ 1   ╎ [STR 2]  │  │ X2  ╎ [STR 2]  │
+; │ 2   ╎ h|2      │  │ X3  ╎ [STR 6]  │
+; │ 3   ╎ [REF 0]  │  │ X4  ╎ [REF 10] │
+; │ 4   ╎ [STR 12] │  │ X5  ╎ [REF 0]  │
+; │ 5   ╎ [STR 6]  │  │ X6  ╎ [REF 4]  │
+; │ 6   ╎ f|1      │  │ X7  ╎ [REF 13] │
+; │ 7   ╎ [REF 4]  │  └─────┴──────────┘
+; │ 8   ╎ [STR 9]  │
+; │ 9   ╎ f|1      │
+; │ 10  ╎ [REF 4]  │
+; │ 11  ╎ [STR 12] │
+; │ 12  ╎ f|1      │
+; │ 13  ╎ [STR 15] │
+; │ 14  ╎ [STR 15] │
+; │ 15  ╎ a|0      │
+; └─────┴──────────┘
+
+)
+

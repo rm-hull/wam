@@ -184,3 +184,36 @@
        | 11  | [STR 5] |
        +-----+---------+")))
 
+(deftest check-put-variable
+  (testing "put-variable"
+    (let [new-ctx (-> ctx (put-variable 'X4 'A1))]
+      (is (= (s/pointer new-ctx :h) 1))
+      (is (= (s/get-store new-ctx 0) ['REF 0]))
+      (is (= (s/get-register new-ctx 'X4) ['REF 0]))
+      (is (= (s/get-register new-ctx 'A1) ['REF 0])))))
+
+
+(deftest check-put-value
+  (testing "put-value"
+    (let [new-ctx (->
+                    ctx
+                    (s/set-register 'X4 32)
+                    (put-value 'X4 'A1))]
+      (is (= (s/get-register new-ctx 'A1) 32)))))
+
+
+(deftest check-get-variable
+  (testing "get-variable"
+    (let [new-ctx (->
+                    ctx
+                    (s/set-register 'A1 99)
+                    (get-variable 'X4 'A1))]
+      (is (= (s/get-register new-ctx 'X4) 99)))))
+
+(deftest check-get-value
+  (testing "get-value"
+    (let [new-ctx (->
+                    ctx
+                    (s/set-register 'A1 99)
+                    (get-value 'X1 'A1))]
+      (is (false? (:fail new-ctx 'X4))))))
