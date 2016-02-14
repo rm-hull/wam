@@ -153,7 +153,7 @@ instructions can be assembled as follows:
 (def table' (comp table inflate (headers "instr" "arg1" "arg2")))
 
 (def term (parse-all structure "p(Z, h(Z, W), f(W))"))
-(table' (emit-instructions query-builder term))
+(table' (emit-instructions query-builder term (register-allocation term)))
 ```
 
 Which returns a list of instructions, which corresponds to Figure 2.3
@@ -185,7 +185,7 @@ that can execute them given a context:
 (use 'table.core)
 
 (def term (parse-all structure "p(Z, h(Z, W), f(W))"))
-(table' (emit-instructions query-builder term))
+(table' (emit-instructions query-builder term (register-allocation term)))
 
 (def context (make-context))
 
@@ -234,7 +234,7 @@ are also subtly different. Assuming the same helper methods as before:
 ; Assume the same helper functions as before
 
 (def term (parse-all structure "p(f(X), h(Y, f(a)), Y)"))
-(table' (emit-instructions program-builder term))
+(table' (emit-instructions program-builder term (register-allocation term))
 ```
 Which returns a list of instructions, which corresponds to Figure 2.4
 in the tutorial:
@@ -273,82 +273,87 @@ By applying the query terms to an empty context,
 (use 'wam.store)
 (use 'table.core)
 
-(def context (make-context))
-
-(def new-context
-  (->
-    context
-    (query "f(X, g(X, a))")
-    (query "f(b, Y)")))
-
 (->
-  new-context
-  heap
-  table)
+  (make-context)
+  (query "f(X, g(X, a))")
+  (query "f(b, Y)")
+  diag)
 ```
 Gives the following heap structure. Note that the heap addresses for
 _a<sub>1</sub>_, _a<sub>2</sub>_, _a<sub>x</sub>_ and _a<sub>y</sub>_
 have been annotated at locations 6,12, 8 and 15 respectively.
 ```
-+-----+----------+
-| key | value    |
-+-----+----------+
-| 0   | [STR 1]  |
-| 1   | a|0      |
-| 2   | [STR 3]  |
-| 3   | g|2      |
-| 4   | [REF 4]  |
-| 5   | [STR 1]  |
-| 6   | [STR 7]  |   <-- a1
-| 7   | f|2      |
-| 8   | [REF 4]  |   <-- aX
-| 9   | [STR 3]  |
-| 10  | [STR 11] |
-| 11  | b|0      |
-| 12  | [STR 13] |   <-- a2
-| 13  | f|2      |
-| 14  | [STR 11] |
-| 15  | [REF 15] |   <-- aY
-+-----+----------+
+┌─────┬──────────┐
+│ key │ value    │
+├─────┼──────────┤
+│ 0   ╎ [STR 1]  │
+│ 1   ╎ a|0      │
+│ 2   ╎ [STR 3]  │
+│ 3   ╎ g|2      │
+│ 4   ╎ [REF 4]  │
+│ 5   ╎ [STR 1]  │
+│ 6   ╎ [STR 7]  │   <-- a1
+│ 7   ╎ f|2      │
+│ 8   ╎ [REF 4]  │   <-- aX
+│ 9   ╎ [STR 3]  │
+│ 10  ╎ [STR 11] │
+│ 11  ╎ b|0      │
+│ 12  ╎ [STR 13] │   <-- a2
+│ 13  ╎ f|2      │
+│ 14  ╎ [STR 11] │
+│ 15  ╎ [REF 15] │   <-- aY
+└─────┴──────────┘
 ```
 Now, calling _unify(a<sub>1</sub>, a<sub>2</sub>)_, the changed context store
 is displayed below.
 
 ```clojure
+(defn tee [v func]
+  (func v)
+  v)
+
 (->
-  new-context
-  (unify 6 12)
-  heap
-  table)
+  (make-context)
+  (query "f(X, g(X, a))")
+  (query "f(b, Y)")
+  (unify 12 6)
+  diag
+  (tee #(println "X = " (resolve-struct % (register-address % 'X2))))
+  (tee #(println "Y = " (resolve-struct % (register-address % 'X3)))))
 ```
 Note that the context failed flag returns as false (not shown), indicating
 unification was successful.
 ```
-+-----+----------+
-| key | value    |
-+-----+----------+
-| 0   | [STR 1]  |
-| 1   | a|0      |
-| 2   | [STR 3]  |
-| 3   | g|2      |
-| 4   | [REF 4]  |
-| 5   | [STR 1]  |
-| 6   | [STR 7]  |   <-- a1
-| 7   | f|2      |
-| 8   | [STR 11] |   <-- aX
-| 9   | [STR 3]  |
-| 10  | [STR 11] |
-| 11  | b|0      |
-| 12  | [STR 13] |   <-- a2
-| 13  | f|2      |
-| 14  | [STR 11] |
-| 15  | [STR 3]  |   <-- aY
-+-----+----------+
+Heap                Registers           Variables
+-------------------------------------------------------
+┌─────┬──────────┐  ┌─────┬──────────┐  ┌─────┬───────┐
+│ key │ value    │  │ key │ value    │  │ key │ value │
+├─────┼──────────┤  ├─────┼──────────┤  ├─────┼───────┤
+│ 0   ╎ [STR 1]  │  │ X1  ╎ [STR 13] │  │ X   ╎ X2    │
+│ 1   ╎ a|0      │  │ X2  ╎ [STR 11] │  │ Y   ╎ X3    │
+│ 2   ╎ [STR 3]  │  │ X3  ╎ [REF 15] │  └─────┴───────┘
+│ 3   ╎ g|2      │  │ X4  ╎ [STR 1]  │
+│ 4   ╎ [STR 11] │  └─────┴──────────┘
+│ 5   ╎ [STR 1]  │
+│ 6   ╎ [STR 7]  │
+│ 7   ╎ f|2      │
+│ 8   ╎ [REF 4]  │
+│ 9   ╎ [STR 3]  │
+│ 10  ╎ [STR 11] │
+│ 11  ╎ b|0      │
+│ 12  ╎ [STR 13] │
+│ 13  ╎ f|2      │
+│ 14  ╎ [STR 11] │
+│ 15  ╎ [STR 3]  │
+└─────┴──────────┘
+
+X = b
+Y = g(b, a)
 ```
 Inspecting the heap, and it becomes clear that:
 
 * dereferencing _a<sub>x</sub>_, `STR 11` → `b|0`, so _X = b_
-* dereferencing _a<sub>y</sub>_, `STR 3` → `g|2`, so _Y = g(X, a) = g(b, a)_
+* dereferencing _a<sub>y</sub>_, `STR 15` → `STR 3` → `g|2`, so _Y = g(X, a) = g(b, a)_
 
 #### Exercise 2.3 (pg. 14)
 
@@ -360,22 +365,171 @@ Inspecting the heap, and it becomes clear that:
 
 _MGU_ = Most General Unifier
 
-TODO
+```clojure
+(->
+  (make-context)
+
+  ; fig 2.3: compiled code for ℒ₀ query ?- p(Z, h(Z, W), f(W)).
+  (put-structure 'h|2, 'X3)
+  (set-variable 'X2)
+  (set-variable 'X5)
+  (put-structure 'f|1, 'X4)
+  (set-value 'X5)
+  (put-structure 'p|3, 'X1)
+  (set-value 'X2)
+  (set-value 'X3)
+  (set-value 'X4)
+
+  ; fig 2.4: compiled code for ℒ₀ query ?- p(f(X), h(Y, f(a)), Y).
+  (get-structure 'p|3, 'X1)
+  (unify-variable 'X2)
+  (unify-variable 'X3)
+  (unify-variable 'X4)
+  (get-structure 'f|1, 'X2)
+  (unify-variable 'X5)
+  (get-structure 'h|2, 'X3)
+  (unify-value 'X4)
+  (unify-variable 'X6)
+  (get-structure 'f|1, 'X6)
+  (unify-variable 'X7)
+  (get-structure 'a|0, 'X7)
+
+  diag
+
+  (tee #(println "W =" (resolve-struct % (register-address % 'X5))))
+  (tee #(println "X =" (resolve-struct % (register-address % 'X5))))
+  (tee #(println "Y =" (resolve-struct % (register-address % 'X4))))
+  (tee #(println "Z =" (resolve-struct % (register-address % 'X2)))))
+```
+Prints:
+```
+Heap                Registers           Variables
+-------------------------------------------------
+┌─────┬──────────┐  ┌─────┬──────────┐  ┌───────┐
+│ key │ value    │  │ key │ value    │  │ value │
+├─────┼──────────┤  ├─────┼──────────┤  ├───────┤
+│ 0   ╎ [STR 1]  │  │ X1  ╎ [STR 8]  │  └───────┘
+│ 1   ╎ h|2      │  │ X2  ╎ [REF 2]  │
+│ 2   ╎ [STR 13] │  │ X3  ╎ [STR 1]  │
+│ 3   ╎ [STR 16] │  │ X4  ╎ [STR 5]  │
+│ 4   ╎ [STR 5]  │  │ X5  ╎ [REF 14] │
+│ 5   ╎ f|1      │  │ X6  ╎ [REF 3]  │
+│ 6   ╎ [REF 3]  │  │ X7  ╎ [REF 17] │
+│ 7   ╎ [STR 8]  │  └─────┴──────────┘
+│ 8   ╎ p|3      │
+│ 9   ╎ [REF 2]  │
+│ 10  ╎ [STR 1]  │
+│ 11  ╎ [STR 5]  │
+│ 12  ╎ [STR 13] │
+│ 13  ╎ f|1      │
+│ 14  ╎ [REF 3]  │
+│ 15  ╎ [STR 16] │
+│ 16  ╎ f|1      │
+│ 17  ╎ [STR 19] │
+│ 18  ╎ [STR 19] │
+│ 19  ╎ a|0      │
+└─────┴──────────┘
+
+W = f(a)
+X = f(a)
+Y = f(f(a))
+Z = f(f(a))
+```
 
 #### Exercise 2.4 (pg. 14)
 
 > What are the respective sequences of ℳ₀ instructions for ℒ₀ _query_
 > term ?-_p(f(X), h(Y, f(a)), Y)_ and _program_ term _p(Z, h(Z, W), f(W))_?
 
-TODO
+Setting the execution trace to `true` and running the two terms:
+
+```clojure
+(->
+  (make-context)
+  (assoc :trace true)
+  (query "p(Z, h(Z, W), f(W))")
+  (program "p(f(X), h(Y, f(a)), Y)")
+```
+
+Gives the following instruction list:
+```
+put_structure h|2, X3
+set_variable X2
+set_variable X5
+put_structure f|1, X4
+set_value X5
+put_structure p|3, X1
+set_value X2
+set_value X3
+set_value X4
+get_structure p|3, X1
+unify_variable X2
+unify_variable X3
+unify_variable X4
+get_structure f|1, X2
+unify_variable X5
+get_structure h|2, X3
+unify_value X4
+unify_variable X6
+get_structure f|1, X6
+unify_variable X7
+get_structure a|0, X7
+```
 
 #### Exercise 2.5 (pg. 14)
 
 > After doing Exercise 2.4, verify that the effects of executing the sequence
 > you produced yields the same solution as that of Exercise 2.3.
 
+Executing:
 
-TODO
+```clojure
+(->
+  (make-context)
+  (assoc :trace true)
+  (query "p(Z, h(Z, W), f(W))")
+  (program "p(f(X), h(Y, f(a)), Y)")
+  diag
+
+  (tee #(println "W =" (resolve-struct % (register-address % 'X5))))
+  (tee #(println "X =" (resolve-struct % (register-address % 'X5))))
+  (tee #(println "Y =" (resolve-struct % (register-address % 'X4))))
+  (tee #(println "Z =" (resolve-struct % (register-address % 'X2)))))
+```
+This gives the same output as [exercise 2.3](#exercise-23-pg-14) (albeit with extra register allcoations):
+```
+Heap                Registers           Variables
+-------------------------------------------------------
+┌─────┬──────────┐  ┌─────┬──────────┐  ┌─────┬───────┐
+│ key │ value    │  │ key │ value    │  │ key │ value │
+├─────┼──────────┤  ├─────┼──────────┤  ├─────┼───────┤
+│ 0   ╎ [STR 1]  │  │ X1  ╎ [STR 8]  │  │ W   ╎ X5    │
+│ 1   ╎ h|2      │  │ X2  ╎ [REF 2]  │  │ X   ╎ X5    │
+│ 2   ╎ [STR 13] │  │ X3  ╎ [STR 1]  │  │ Y   ╎ X4    │
+│ 3   ╎ [STR 16] │  │ X4  ╎ [STR 5]  │  │ Z   ╎ X2    │
+│ 4   ╎ [STR 5]  │  │ X5  ╎ [REF 14] │  └─────┴───────┘
+│ 5   ╎ f|1      │  │ X6  ╎ [REF 3]  │
+│ 6   ╎ [REF 3]  │  │ X7  ╎ [REF 17] │
+│ 7   ╎ [STR 8]  │  └─────┴──────────┘
+│ 8   ╎ p|3      │
+│ 9   ╎ [REF 2]  │
+│ 10  ╎ [STR 1]  │
+│ 11  ╎ [STR 5]  │
+│ 12  ╎ [STR 13] │
+│ 13  ╎ f|1      │
+│ 14  ╎ [REF 3]  │
+│ 15  ╎ [STR 16] │
+│ 16  ╎ f|1      │
+│ 17  ╎ [STR 19] │
+│ 18  ╎ [STR 19] │
+│ 19  ╎ a|0      │
+└─────┴──────────┘
+
+W = f(a)
+X = f(a)
+Y = f(f(a))
+Z = f(f(a))
+```
 
 ## Language ℒ₁
 
