@@ -2,9 +2,29 @@
 
 A gradual WAM implementation in Clojure following Hassan Aït-Kaci's tutorial reconstruction.
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Language ℒ₀](#language-%E2%84%92%E2%82%80)
+  - [Exercise 2.1 (pg. 9)](#exercise-21-pg-9)
+  - [EBNF ℒ₀ Grammar & Parser Combinators](#ebnf-%E2%84%92%E2%82%80-grammar-&-parser-combinators)
+  - [Compiling ℒ₀ queries](#compiling-%E2%84%92%E2%82%80-queries)
+  - [Compiling ℒ₀ programs](#compiling-%E2%84%92%E2%82%80-programs)
+  - [Exercise 2.2 (pg. 14)](#exercise-22-pg-14)
+  - [Exercise 2.3 (pg. 14)](#exercise-23-pg-14)
+  - [Exercise 2.4 (pg. 14)](#exercise-24-pg-14)
+  - [Exercise 2.5 (pg. 14)](#exercise-25-pg-14)
+- [Language ℒ₁](#language-%E2%84%92%E2%82%81)
+  - [Exercise 2.6 (pg. 18)](#exercise-26-pg-18)
+- [References](#references)
+- [License](#license)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Language ℒ₀
 
-#### Exercise 2.1 (pg. 9)
+### Exercise 2.1 (pg. 9)
 
 > Verify that the effect of executing the sequence of instructions shown in
 > Figure 2.3 (starting with `H` = 0) does indeed yield a correct heap
@@ -54,7 +74,7 @@ Produces:
    +-----+---------+
 ```
 
-#### EBNF ℒ₀ Grammar & Parser Combinators
+### EBNF ℒ₀ Grammar & Parser Combinators
 
 The simplistic EBNF [grammar rules](https://github.com/rm-hull/wam/blob/L0/src/wam/grammar.clj)
 for ℒ₀ below have been implemented using a [parser monad](https://github.com/rm-hull/wam/blob/L0/src/wam/parser.clj).
@@ -98,7 +118,7 @@ yields a structure as follows:
                   #Structure{:functor f|1,
                              :args (#Variable{:name W})})}
 ```
-#### Compiling ℒ₀ queries
+### Compiling ℒ₀ queries
 
 Now that the term _p(Z, h(Z, W), f(W))_ parses into a hierarchical data
 structure, a breadth-first search is employed to allocate registers on a
@@ -219,7 +239,7 @@ parsed from a string representation **"p(Z, h(Z, W), f(W))"**.
 | 11  | [STR 5] |
 +-----+---------+
 ```
-#### Compiling ℒ₀ programs
+### Compiling ℒ₀ programs
 
 Compiling a program term follows a similar vein to query term construction:
 registers are allocated breadth-first, but instead of walking the tree in
@@ -256,7 +276,7 @@ in the tutorial:
 | wam.instruction_set$get_structure@1458d55  | a|0  | X7   |
 +--------------------------------------------+------+------+
 ```
-#### Exercise 2.2 (pg. 14)
+### Exercise 2.2 (pg. 14)
 
 > Give heap representations for the terms _f(X, g(X, a))_ and _f(b, Y)_.
 > Let _a<sub>1</sub>_ and _a<sub>2</sub>_ be their respective heap addresses,
@@ -355,7 +375,7 @@ Inspecting the heap, and it becomes clear that:
 * dereferencing _a<sub>x</sub>_, `STR 11` → `b|0`, so _X = b_
 * dereferencing _a<sub>y</sub>_, `STR 15` → `STR 3` → `g|2`, so _Y = g(X, a) = g(b, a)_
 
-#### Exercise 2.3 (pg. 14)
+### Exercise 2.3 (pg. 14)
 
 > Verify that the effect of executing the sequence of instructions shown in
 > Figure 2.4 right after that in Figure 2.3 produces the MGU of the terms
@@ -436,7 +456,7 @@ Y = f(f(a))
 Z = f(f(a))
 ```
 
-#### Exercise 2.4 (pg. 14)
+### Exercise 2.4 (pg. 14)
 
 > What are the respective sequences of ℳ₀ instructions for ℒ₀ _query_
 > term ?-_p(f(X), h(Y, f(a)), Y)_ and _program_ term _p(Z, h(Z, W), f(W))_?
@@ -476,7 +496,7 @@ unify_variable X7
 get_structure a|0, X7
 ```
 
-#### Exercise 2.5 (pg. 14)
+### Exercise 2.5 (pg. 14)
 
 > After doing Exercise 2.4, verify that the effects of executing the sequence
 > you produced yields the same solution as that of Exercise 2.3.
@@ -533,7 +553,7 @@ Z = f(f(a))
 
 ## Language ℒ₁
 
-#### Exercise 2.6 (pg. 18)
+### Exercise 2.6 (pg. 18)
 
 > Verify that the effect of executing thr sequence of ℳ₁ instructions
 > shown in Figure 2.9 produces the same heap representation as that produced by
