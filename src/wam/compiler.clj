@@ -25,6 +25,7 @@
     [clojure.string :as s]
     [clojure.set :refer [union]]
     [wam.instruction-set :refer :all]
+    [wam.store :refer [friendly]]
     [wam.parser :refer [parse-all]]
     [wam.grammar :as g]
     [wam.graph-search :refer :all]))
@@ -153,6 +154,19 @@
     (filter #(instance? wam.grammar.Variable (first %)))
     (update ctx :variables concat)))
 
+(defn single-step
+  "Execute an instruction with respect to the supplied context, if
+   the fail flag has not been set. If the context has failed, then
+   just return the context unchanged (i.e. don't execute the instruction).
+   This causes the remaining instructions to also fall through."
+  [ctx [instr & args]]
+  (if-not (:fail ctx)
+    (do
+      (when (:trace ctx)
+        (println (friendly (cons instr args))))
+      (apply instr ctx args))
+    ctx))
+
 (defn compile-term
   "Emits a sequence of instructions that equates to provided term according
    to the rules of the builder. Returns a function which is capable of
@@ -161,7 +175,7 @@
   (let [register-allocation (register-allocation term)
         instrs (emit-instructions builder term register-allocation)]
     (fn [ctx]
-      (call (assoc-variables ctx register-allocation) instrs))))
+      (reduce single-step (assoc-variables ctx register-allocation) instrs))))
 
 (defn query [ctx expression]
   (let [executor (->>
