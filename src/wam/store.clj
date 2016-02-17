@@ -24,15 +24,18 @@
 (ns wam.store
   (:require
     [table.core :refer [table table-str]]
-    [clojure.string :refer [split-lines]]))
+    [clojure.string :refer [join split-lines]]))
 
 (def ^:private supported-modes #{:read :write})
-(def ^:private supported-pointers #{:h :s :x})
-(def ^:private supports-incrementing #{:h :s})
-(def ^:private heap-start 0)
-(def ^:private register-start 1000)
+(def ^:private supported-pointers #{:p :np :h :s})
+(def program-pointer-start 0)
+(def heap-start 1000)
+(def heap-size 1000)
+(def heap-end (+ heap-start heap-size))
+(def register-start (inc heap-end))
+(def register-size 30)
+(def register-end (+ register-start register-size))
 
-(def ^:private register-number
 (def register-address
   (memoize
     (fn [Xi]
@@ -47,10 +50,12 @@
     (throw (IllegalArgumentException. (str "Unsuported pointer " ptr)))))
 
 (defn increment [ctx ptr]
-  (if (supports-incrementing ptr)
+  (if (supported-pointers ptr)
     (update-in ctx [:pointer ptr] inc)
     (throw (IllegalArgumentException. (str "Unsuported pointer " ptr)))))
 
+(defn program-address [ctx p|N]
+  (:start-addr (get-in ctx [:program-offsets p|N])))
 
 (defn get-store [ctx addr]
   (get-in ctx [:store addr]))
@@ -70,31 +75,31 @@
   { :fail false
     :mode :read
     :pointer {
-      :h heap-start
-      :s heap-start      ; FIXME: is this offset correct?
-      :x register-start}
-    :store {} })
+      :p program-pointer-start  ;; Program pointer
+      :np program-pointer-start ;; next instr pointer
+      :h heap-start             ;; Top of heap
+      :s heap-start             ;; Structure pointer
+      }
+    :store {}
+    :program-offsets {} })
 
-(defn heap [ctx]
-  (->>
-    ctx
-    :store
-    (filter (fn [[k v]] (and (>= k heap-start) (< k register-start))))
-    (into (sorted-map))))
 
-(defn registers [ctx]
-  (->>
-    ctx
-    :store
-    (filter (fn [[k v]] (>= k register-start)))
-    (map (fn [[k v]] [(symbol (str "X" (- k register-start))) v]))
-    (into (sorted-map))))
-
-(defn variables [ctx]
-  (->>
-    ctx
-    :variables
-    (into (sorted-map))))
+(defn load [ctx p|N instrs]
+  (let [len (count instrs)
+        np (pointer ctx :np)
+        ctx (->
+              ctx
+              (assoc-in [:program-offsets p|N] {:start-addr np :size len})
+              (update-in [:pointer :np] (partial + len)))]
+    (loop [ctx ctx
+           i np
+           [instr & more] instrs]
+      (if (nil? instr)
+        ctx
+        (recur
+          (set-store ctx i instr)
+          (inc i)
+          more)))))
 
 (defn fail
   ([ctx] (fail ctx true))
@@ -105,12 +110,58 @@
     (assoc ctx :mode new-mode)
     (throw (IllegalArgumentException. (str "Unsupported mode " new-mode)))))
 
+;; == Diagnostic tools ==
+;; move out into a separate namespace
+
+(defn ^:private extract-from-store
+  ([ctx start end]
+    (extract-from-store ctx start end identity))
+
+  ([ctx start end row-mapper]
+    (->>
+      ctx
+      :store
+      (filter (fn [[k v]] (<= start k end)))
+      (map row-mapper)
+      (into (sorted-map)))))
+
+(defn heap [ctx]
+  (extract-from-store ctx heap-start heap-end))
+
+(defn registers [ctx]
+  (extract-from-store ctx register-start register-end
+    (fn [[k v]] [(symbol (str "X" (- k register-start))) v])))
+
+(defn variables [ctx]
+  (->>
+    ctx
+    :variables
+    (into (sorted-map))))
+
+(defn func-name [func]
+  (second (re-find #"\$(.*)@" (str func))))
+
+(defn friendly [[instr & args]]
+  (str (func-name instr) " " (join ", " args)))
+
+(defn program [ctx p|N]
+  (if-let [prog (get-in ctx [:program-offsets p|N])]
+    (extract-from-store
+      ctx
+      (:start-addr prog)
+      (+ (:start-addr prog) (:size prog))
+      (fn [[k v]] [k (friendly v)]))))
+
 (defn diag [ctx]
   (let [inflate (fn [data] (lazy-cat data (repeat nil)))
         heap (split-lines (table-str (heap ctx) :style :unicode ))
         regs (inflate (split-lines (table-str (registers ctx) :style :unicode)))
         vars (inflate (split-lines (table-str (variables ctx) :style :unicode)))
         data (map list heap regs vars)]
+
+    (when (:fail ctx)
+      (println "FAILED"))
+
     (table (cons ["Heap" "Registers" "Variables"] data) :style :borderless))
   ctx)
 
