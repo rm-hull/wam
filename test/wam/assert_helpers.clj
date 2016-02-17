@@ -25,7 +25,16 @@
   (:require
     [clojure.string :as str]
     [table.core :as t]
-    [wam.instruction-set :refer [func-name]]))
+    [wam.store :as s]))
+
+(defn heap [offset]
+  (+ s/heap-start offset) )
+
+(defn register [offset]
+  (+ s/register-start offset) )
+
+
+
 
 ; Some helper functions to get round limitations in table
 (defn- inflate [table]
@@ -35,9 +44,12 @@
 (defn- headers [& headers]
   (fn [table] (cons headers table)))
 
-(defn friendly [[instr & args]] (cons (func-name instr) args))
-
-(def instr (comp t/table inflate (headers "instr" "arg1" "arg2") (partial map friendly)))
+(def instr
+  (comp
+    t/table
+    inflate
+    (headers "instr" "arg1" "arg2")
+    (partial map (fn [[instr & args]] (cons (s/func-name instr) args)))))
 
 (defn- line-trim [s]
   (->>

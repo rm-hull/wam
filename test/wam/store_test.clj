@@ -32,10 +32,13 @@
     (let [ctx (s/make-context)]
       (is (= (ctx :fail) false))
       (is (= (ctx :mode) :read))
-      (is (= (pointer ctx :h) 0))
-      (is (= (pointer ctx :s) 0))
-      (is (= (pointer ctx :x) 1000))
-      (is (empty? (ctx :store))))))
+      (is (= (s/pointer ctx :p) s/program-pointer-start))
+      (is (= (s/pointer ctx :h) s/heap-start))
+      (is (= (s/pointer ctx :s) s/heap-start))
+      (is (contains? ctx :store))
+      (is (empty? (ctx :store)))
+      (is (contains? ctx :program-offsets))
+      (is (empty? (ctx :program-offsets))))))
 
 (deftest check-fail
   (testing "Fail instruction"
@@ -47,19 +50,19 @@
 
 (deftest check-pointer-access
   (testing "Pointer access"
-      (is (= (pointer ctx :h) 0))
-      (is (= (pointer ctx :s) 0))
-      (is (= (pointer ctx :x) 1000))
     (let [ctx (s/make-context)]
+      (is (= (s/pointer ctx :p) 0))
+      (is (= (s/pointer ctx :h) (heap 0)))
+      (is (= (s/pointer ctx :s) (heap 0)))
       (is (thrown? IllegalArgumentException (s/pointer ctx nil)))
       (is (thrown? IllegalArgumentException (s/pointer ctx :banana))))))
 
 (deftest check-pointer-increment
   (testing "Pointer incrementing"
-      (is (= (-> ctx (increment :h) (pointer :h)) 1))
-      (is (= (-> ctx (increment :s) (pointer :s)) 1))
-      (is (thrown? IllegalArgumentException (increment ctx :x)))
     (let [ctx (s/make-context)]
+      (is (= (-> ctx (s/increment :p) (s/pointer :p)) 1))
+      (is (= (-> ctx (s/increment :h) (s/pointer :h)) (heap 1)))
+      (is (= (-> ctx (s/increment :s) (s/pointer :s)) (heap 1)))
       (is (thrown? IllegalArgumentException (s/increment ctx nil)))
       (is (thrown? IllegalArgumentException (s/increment ctx :banana))))))
 
