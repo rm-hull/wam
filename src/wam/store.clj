@@ -33,9 +33,13 @@
 (def ^:private register-start 1000)
 
 (def ^:private register-number
+(def register-address
   (memoize
     (fn [Xi]
-      (->> Xi str (re-find #"\d+") Integer/parseInt))))
+      (let [offset (->> Xi str (re-find #"\d+") Integer/parseInt)]
+      (if (> offset register-size)
+        (throw (IllegalArgumentException.))
+        (+ register-start offset))))))
 
 (defn pointer [ctx ptr]
   (if (supported-pointers ptr)
@@ -47,21 +51,19 @@
     (update-in ctx [:pointer ptr] inc)
     (throw (IllegalArgumentException. (str "Unsuported pointer " ptr)))))
 
-(defn register-address [ctx Xi]
-  (+ (register-number Xi) (pointer ctx :x)))
 
 (defn get-store [ctx addr]
   (get-in ctx [:store addr]))
 
 (defn get-register [ctx Xi]
-  (let [addr (register-address ctx Xi)]
+  (let [addr (register-address Xi)]
     (get-store ctx addr)))
 
 (defn set-store [ctx addr v]
   (assoc-in ctx [:store addr] v))
 
 (defn set-register [ctx Xi v]
-  (let [addr (register-address ctx Xi)]
+  (let [addr (register-address Xi)]
     (set-store ctx addr v)))
 
 (defn make-context []

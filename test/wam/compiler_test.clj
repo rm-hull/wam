@@ -23,7 +23,6 @@
 
 (ns wam.compiler-test
   (:require
-    [clojure.string :as s]
     [clojure.test :refer :all]
     [wam.assert-helpers :refer :all]
     [wam.anciliary :refer [unify resolve-struct]]
@@ -31,7 +30,7 @@
     [wam.instruction-set :refer :all]
     [wam.parser :refer [parse-all]]
     [wam.grammar :refer [structure]]
-    [wam.store :refer [heap registers variables make-context diag register-address]]))
+    [wam.store :as s]))
 
 (deftest check-register-allocation
   (testing "Register allocation"
@@ -131,7 +130,6 @@
               "p(Z, h(Z, W), f(W))"
               (parse-all structure)
               (compile-term query-builder))]
-      (is (tbl= (-> (make-context) q heap)
         "+-----+---------+
          | key | value   |
          +-----+---------+
@@ -148,11 +146,12 @@
          | 10  | [STR 1] |
          | 11  | [STR 5] |
          +-----+---------+"))))
+      (is (tbl= (-> (s/make-context) q s/heap)
 
   (testing "Sequential queries"
     (is (tbl=
           (->
-            (make-context)
+            (s/make-context)
             (query "f(X, g(X, a))")
             (query "f(b, Y)")
             heap)
@@ -176,15 +175,15 @@
            | 14  | [STR 11] |
            | 15  | [REF 15] |
            +-----+----------+")))
+            s/heap)
 
   (testing "Unification"
     (is (tbl=
           (->
-            (make-context)
+            (s/make-context)
             (query "f(X, g(X, a))")
             (query "f(b, Y)")
             (unify 6 12)
-            heap)
           "+-----+----------+
            | key | value    |
            +-----+----------+
@@ -205,19 +204,20 @@
            | 14  | [STR 11] |
            | 15  | [STR 3]  |
            +-----+----------+"))))
+            s/heap )
 
 (deftest ex2.2
   (let [ctx (->
-              (make-context)
+              (s/make-context)
               (query "f(X, g(X, a))")
               (query "f(b, Y)")
               (unify 12 6))]
-    (is (= (resolve-struct ctx (register-address ctx 'X2)) "b"))
-    (is (= (resolve-struct ctx (register-address ctx 'X3)) "g(b, a)"))))
+    (is (= (resolve-struct ctx (s/register-address 'X2)) "b"))
+    (is (= (resolve-struct ctx (s/register-address 'X3)) "g(b, a)"))))
 
 (deftest ex2.3
   (let [ctx (->
-              (make-context)
+              (s/make-context)
 
               ; fig 2.3: compiled code for ℒ₀ query ?- p(Z, h(Z, W), f(W)).
               (put-structure 'h|2, 'X3)
@@ -244,10 +244,10 @@
               (unify-variable 'X7)
               (get-structure 'a|0, 'X7))
 
-        W (resolve-struct ctx (register-address ctx 'X5))
-        X (resolve-struct ctx (register-address ctx 'X5))
-        Y (resolve-struct ctx (register-address ctx 'X4))
-        Z (resolve-struct ctx (register-address ctx 'X2))]
+        W (resolve-struct ctx (s/register-address 'X5))
+        X (resolve-struct ctx (s/register-address 'X5))
+        Y (resolve-struct ctx (s/register-address 'X4))
+        Z (resolve-struct ctx (s/register-address 'X2))]
     (is (= W "f(a)"))
     (is (= X "f(a)"))
     (is (= Y "f(f(a))"))
@@ -255,14 +255,14 @@
 
 (deftest ex2.5
   (let [ctx (->
-              (make-context)
+              (s/make-context)
               (query "p(Z, h(Z, W), f(W))")
               (program "p(f(X), h(Y, f(a)), Y)"))
 
-              W (resolve-struct ctx (register-address ctx 'X5))
-        X (resolve-struct ctx (register-address ctx 'X5))
-        Y (resolve-struct ctx (register-address ctx 'X4))
-        Z (resolve-struct ctx (register-address ctx 'X2))]
+        W (resolve-struct ctx (s/register-address 'X5))
+        X (resolve-struct ctx (s/register-address 'X5))
+        Y (resolve-struct ctx (s/register-address 'X4))
+        Z (resolve-struct ctx (s/register-address 'X2))]
     (is (= W "f(a)"))
     (is (= X "f(a)"))
     (is (= Y "f(f(a))"))
@@ -274,11 +274,11 @@
   v)
 
 (->
-  (make-context)
+  (s/make-context)
   (assoc :trace true)
   (query "father(R, henry)")
   (program "father(richard, henry)")
-  diag
+  s/diag
   (tee #(println "R" (resolve-struct % 1002))))
 
 ; put_structure henry|0, X3
@@ -310,11 +310,11 @@
 ; {:fail false, :mode :read, :pointer {:h 8, :s 2, :x 1000}, :store {0 [STR 1], 7 richard|0, 1001 [STR 3], 1 henry|0, 4 [STR 7], 1002 [REF 4], 1003 [STR 1], 6 [STR 7], 3 father|2, 2 [STR 3], 5 [STR 1]}, :trace true, :variables ([R X2])}
 
 (->
-  (make-context)
+  (s/make-context)
   (assoc :trace true)
   (query "father(R, henry)")
   (program "father(henry, richard)")
-  diag
+  s/diag
   (tee #(println "R" (resolve-struct % 1002))))
 
 ; put_structure henry|0, X3
@@ -346,11 +346,11 @@
 ; {:fail true, :mode :write, :pointer {:h 8, :s 6, :x 1000}, :store {0 [STR 1], 7 henry|0, 1001 [STR 3], 1 henry|0, 4 [STR 7], 1002 [REF 4], 1003 [STR 1], 6 [STR 7], 3 father|2, 2 [STR 3], 5 [STR 1]}, :trace true, :variables ([R X2])}
 
 (->
-  (make-context)
+  (s/make-context)
   (assoc :trace true)
   (query "father(richard, J)")
   (program "father(W, K)")
-  diag
+  s/diag
   ;(tee #(println "J" (resolve-struct % 1003)))
   ;(tee #(println "K" (resolve-struct % 1003)))
   ;(tee #(println "W" (resolve-struct % 1002)))

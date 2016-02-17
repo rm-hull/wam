@@ -64,7 +64,7 @@
    dereferencing is none other than composing variable substitutions."
   [ctx addr]
   (if (symbol? addr)
-    (deref ctx (s/register-address ctx addr))
+    (deref ctx (s/register-address addr))
     (let [cell (s/get-store ctx addr)]
       (cond
         (not (cell? cell))

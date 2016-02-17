@@ -24,11 +24,12 @@
 (ns wam.store-test
   (:require
     [clojure.test :refer :all]
-    [wam.store :refer :all]))
+    [wam.assert-helpers :refer :all]
+    [wam.store :as s]))
 
 (deftest check-make-context
   (testing "Initial context creation"
-    (let [ctx (make-context)]
+    (let [ctx (s/make-context)]
       (is (= (ctx :fail) false))
       (is (= (ctx :mode) :read))
       (is (= (pointer ctx :h) 0))
@@ -38,41 +39,43 @@
 
 (deftest check-fail
   (testing "Fail instruction"
-    (let [ctx (make-context)]
+    (let [ctx (s/make-context)]
       (is (false? (ctx :fail)))
-      (is (true? ((fail ctx) :fail)))
-      (is (true? ((fail ctx true) :fail)))
-      (is (false? ((fail ctx false) :fail))))))
+      (is (true? ((s/fail ctx) :fail)))
+      (is (true? ((s/fail ctx true) :fail)))
+      (is (false? ((s/fail ctx false) :fail))))))
 
 (deftest check-pointer-access
   (testing "Pointer access"
-    (let [ctx (make-context)]
       (is (= (pointer ctx :h) 0))
       (is (= (pointer ctx :s) 0))
       (is (= (pointer ctx :x) 1000))
-      (is (thrown? IllegalArgumentException (pointer ctx nil)))
-      (is (thrown? IllegalArgumentException (pointer ctx :banana))))))
+    (let [ctx (s/make-context)]
+      (is (thrown? IllegalArgumentException (s/pointer ctx nil)))
+      (is (thrown? IllegalArgumentException (s/pointer ctx :banana))))))
 
 (deftest check-pointer-increment
   (testing "Pointer incrementing"
-    (let [ctx (make-context)]
       (is (= (-> ctx (increment :h) (pointer :h)) 1))
       (is (= (-> ctx (increment :s) (pointer :s)) 1))
       (is (thrown? IllegalArgumentException (increment ctx :x)))
-      (is (thrown? IllegalArgumentException (increment ctx nil)))
-      (is (thrown? IllegalArgumentException (increment ctx :banana))))))
+    (let [ctx (s/make-context)]
+      (is (thrown? IllegalArgumentException (s/increment ctx nil)))
+      (is (thrown? IllegalArgumentException (s/increment ctx :banana))))))
 
 (deftest check-register-address
   (testing "Register addressing"
-    (let [ctx (make-context)]
-      (is (= (register-address ctx 'X1) 1001))
-      (is (= (register-address ctx 'X55) 1055))
-      (is (= (register-address ctx 'A3) 1003)))))
+    (let [ctx (s/make-context)]
+      (is (= (s/register-address 'X1) (+ s/register-start 1)))
+      (is (= (s/register-address 'X14) (+ s/register-start 14)))
+      (is (= (s/register-address 'A3) (+ s/register-start 3)))
+      (is (thrown? IllegalArgumentException (s/register-address 'X55))))))
 
 (deftest check-mode
   (testing "Set mode"
-    (let [ctx (make-context)]
+    (let [ctx (s/make-context)]
       (is (= (ctx :mode) :read))
-      (is (= ((mode ctx :write) :mode) :write))
-      (is (thrown? IllegalArgumentException (mode ctx nil)))
-      (is (thrown? IllegalArgumentException (mode ctx :banana))))))
+      (is (= ((s/mode ctx :write) :mode) :write))
+      (is (thrown? IllegalArgumentException (s/mode ctx nil)))
+      (is (thrown? IllegalArgumentException (s/mode ctx :banana))))))
+
