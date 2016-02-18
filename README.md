@@ -6,17 +6,20 @@ A gradual WAM implementation in Clojure following Hassan Aït-Kaci's tutorial re
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Language ℒ₀](#language-%E2%84%92%E2%82%80)
+- [Language ℒ₀](#language-ℒ)
   - [Exercise 2.1 (pg. 9)](#exercise-21-pg-9)
-  - [EBNF ℒ₀ Grammar & Parser Combinators](#ebnf-%E2%84%92%E2%82%80-grammar-&-parser-combinators)
-  - [Compiling ℒ₀ queries](#compiling-%E2%84%92%E2%82%80-queries)
-  - [Compiling ℒ₀ programs](#compiling-%E2%84%92%E2%82%80-programs)
+  - [EBNF ℒ₀ Grammar & Parser Combinators](#ebnf-ℒ-grammar--parser-combinators)
+  - [Compiling ℒ₀ queries](#compiling-ℒ-queries)
+  - [Compiling ℒ₀ programs](#compiling-ℒ-programs)
   - [Exercise 2.2 (pg. 14)](#exercise-22-pg-14)
   - [Exercise 2.3 (pg. 14)](#exercise-23-pg-14)
   - [Exercise 2.4 (pg. 14)](#exercise-24-pg-14)
   - [Exercise 2.5 (pg. 14)](#exercise-25-pg-14)
-- [Language ℒ₁](#language-%E2%84%92%E2%82%81)
+- [Language ℒ₁](#language-ℒ)
   - [Exercise 2.6 (pg. 18)](#exercise-26-pg-18)
+  - [Exercise 2.7 (pg. 18)](#exercise-27-pg-18)
+  - [Exercise 2.8 (pg. 18)](#exercise-28-pg-18)
+  - [Exercise 2.9 (pg. 19)](#exercise-29-pg-19)
 - [References](#references)
 - [License](#license)
 
@@ -499,7 +502,8 @@ get_structure a|0, X7
 ### Exercise 2.5 (pg. 14)
 
 > After doing Exercise 2.4, verify that the effects of executing the sequence
-> you produced yields the same solution as that of Exercise 2.3.
+> you produced yields the same solution as that of [Exercise 2.3](#exercise-23-pg-14).
+
 
 Executing:
 
@@ -555,11 +559,34 @@ Z = f(f(a))
 
 ### Exercise 2.6 (pg. 18)
 
-> Verify that the effect of executing thr sequence of ℳ₁ instructions
+> Verify that the effect of executing the sequence of ℳ₁ instructions
 > shown in Figure 2.9 produces the same heap representation as that produced by
 > the ℳ₀ code of Figure 2.3 (see [Exercise 2.1](#exercise-21-pg-9)).
 
+TODO
 
+### Exercise 2.7 (pg. 18)
+
+> Verify that the effect of executing the sequence of ℳ₁ instructions
+> shown in Figure 2.10 right after that in Figure 2.9 produces the MGU of the
+> terms _p(Z, h(Z, W), f(W))_ and _p(f(X), h(Y, f(a)), Y)_. That is, the binding
+> _W = f(a)_, _X = f(a)_, _Y = f(f(a))_, _Z = f(f(a))_.
+
+TODO
+
+### Exercise 2.8 (pg. 18)
+
+> What are the respective sequences of ℳ₁ instructions for ℒ₁ _query_
+> term ?-_p(f(X), h(Y, f(a)), y)_ and ℒ₁ _program_ term _p(Z, h(Z, W), f(W))_?
+
+TODO
+
+### Exercise 2.9 (pg. 19)
+
+> After doing [Exercise 2.8](#exercise-28-pg-18), verify that the effect of executing the
+> sequence you produced yields the same solution as that of [Exercise 2.7](#exercise-27-pg-18).
+
+TODO
 
 ## References
 
