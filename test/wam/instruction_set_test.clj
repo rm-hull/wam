@@ -238,14 +238,31 @@
         (is (false? (:fail ctx)))
         (is (= (s/pointer ctx :p) 1))))))
 
-
-
-
-(def p|3
-  (list
-))
-
 (deftest ex2.6
+  (is (tbl=
+        (->
+          (s/make-context)
+          (put-variable 'X4, 'A1)
+          (put-structure 'h|2, 'A2)
+          (set-value 'X4)
+          (set-variable 'X5)
+          (put-structure 'f|1, 'A3)
+          (set-value 'X5)
+          s/heap)
+         "+------+------------+
+          | key  | value      |
+          +------+------------+
+          | 1000 | [REF 1000] |
+          | 1001 | [STR 1002] |
+          | 1002 | h|2        |
+          | 1003 | [REF 1000] |
+          | 1004 | [REF 1004] |
+          | 1005 | [STR 1006] |
+          | 1006 | f|1        |
+          | 1007 | [REF 1004] |
+          +------+------------+")))
+
+(deftest ex2.7
   (let [p|3 (list
               [get-structure 'f|1, 'A1]
               [unify-variable 'X4]
@@ -259,24 +276,27 @@
               [proceed])
         ctx (->
               (s/make-context)
-              (s/load 'p|3 p|3)
               (put-variable 'X4, 'A1)
               (put-structure 'h|2, 'A2)
               (set-value 'X4)
               (set-variable 'X5)
               (put-structure 'f|1, 'A3)
               (set-value 'X5)
+              (s/load 'p|3 p|3)
               (call 'p|3))
 
-        W (resolve-struct ctx (s/register-address 'X5))
+        W (resolve-struct ctx (s/register-address 'X4))
         X (resolve-struct ctx (s/register-address 'X4))
-        Y (resolve-struct ctx (s/register-address 'X5))
-        Z (resolve-struct ctx (s/register-address 'X4))]
+        Y (resolve-struct ctx (s/register-address 'A3))
+        Z (resolve-struct ctx (s/register-address 'A1))]
 
     (s/diag ctx)
-    (s/program ctx 'p|3)
 
-    (testing "")))
+    (println "W =" W)
+    (println "X =" X)
+    (println "Y =" Y)
+    (println "Z =" Z)
+    ))
 
 ; Heap                Registers           Variables
 ; -------------------------------------------------

@@ -15,7 +15,7 @@ A gradual WAM implementation in Clojure following Hassan Aït-Kaci's tutorial re
   - [Exercise 2.3 (pg. 14)](#exercise-23-pg-14)
   - [Exercise 2.4 (pg. 14)](#exercise-24-pg-14)
   - [Exercise 2.5 (pg. 14)](#exercise-25-pg-14)
-- [Language ℒ₁](#language-ℒ)
+- [Language ℒ₁](#language-ℒ-1)
   - [Exercise 2.6 (pg. 18)](#exercise-26-pg-18)
   - [Exercise 2.7 (pg. 18)](#exercise-27-pg-18)
   - [Exercise 2.8 (pg. 18)](#exercise-28-pg-18)
@@ -59,22 +59,22 @@ See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/L0/src/wam
 ```
 Produces:
 ```
-   +-----+---------+
-   | key | value   |
-   +-----+---------+
-   | 0   | [STR 1] |
-   | 1   | h|2     |
-   | 2   | [REF 2] |
-   | 3   | [REF 3] |
-   | 4   | [STR 5] |
-   | 5   | f|1     |
-   | 6   | [REF 3] |
-   | 7   | [STR 8] |
-   | 8   | p|3     |
-   | 9   | [REF 2] |
-   | 10  | [STR 1] |
-   | 11  | [STR 5] |
-   +-----+---------+
++-----+---------+
+| key | value   |
++-----+---------+
+| 0   | [STR 1] |
+| 1   | h|2     |
+| 2   | [REF 2] |
+| 3   | [REF 3] |
+| 4   | [STR 5] |
+| 5   | f|1     |
+| 6   | [REF 3] |
+| 7   | [STR 8] |
+| 8   | p|3     |
+| 9   | [REF 2] |
+| 10  | [STR 1] |
+| 11  | [STR 5] |
++-----+---------+
 ```
 
 ### EBNF ℒ₀ Grammar & Parser Combinators
@@ -341,8 +341,8 @@ is displayed below.
   (query "f(b, Y)")
   (unify 12 6)
   diag
-  (tee #(println "X = " (resolve-struct % (register-address % 'X2))))
-  (tee #(println "Y = " (resolve-struct % (register-address % 'X3)))))
+  (tee #(println "X =" (resolve-struct % (register-address 'X2))))
+  (tee #(println "Y =" (resolve-struct % (register-address 'X3)))))
 ```
 Note that the context failed flag returns as false (not shown), indicating
 unification was successful.
@@ -419,10 +419,10 @@ _MGU_ = Most General Unifier
 
   diag
 
-  (tee #(println "W =" (resolve-struct % (register-address % 'X5))))
-  (tee #(println "X =" (resolve-struct % (register-address % 'X5))))
-  (tee #(println "Y =" (resolve-struct % (register-address % 'X4))))
-  (tee #(println "Z =" (resolve-struct % (register-address % 'X2)))))
+  (tee #(println "W =" (resolve-struct % (register-address 'X5))))
+  (tee #(println "X =" (resolve-struct % (register-address 'X5))))
+  (tee #(println "Y =" (resolve-struct % (register-address 'X4))))
+  (tee #(println "Z =" (resolve-struct % (register-address 'X2)))))
 ```
 Prints:
 ```
@@ -515,10 +515,10 @@ Executing:
   (program "p(f(X), h(Y, f(a)), Y)")
   diag
 
-  (tee #(println "W =" (resolve-struct % (register-address % 'X5))))
-  (tee #(println "X =" (resolve-struct % (register-address % 'X5))))
-  (tee #(println "Y =" (resolve-struct % (register-address % 'X4))))
-  (tee #(println "Z =" (resolve-struct % (register-address % 'X2)))))
+  (tee #(println "W =" (resolve-struct % (register-address 'X5))))
+  (tee #(println "X =" (resolve-struct % (register-address 'X5))))
+  (tee #(println "Y =" (resolve-struct % (register-address 'X4))))
+  (tee #(println "Z =" (resolve-struct % (register-address 'X2)))))
 ```
 This gives the same output as [exercise 2.3](#exercise-23-pg-14) (albeit with extra register allcoations):
 ```
@@ -563,7 +563,56 @@ Z = f(f(a))
 > shown in Figure 2.9 produces the same heap representation as that produced by
 > the ℳ₀ code of Figure 2.3 (see [Exercise 2.1](#exercise-21-pg-9)).
 
-TODO
+Assuming the same imports and initial context as perviously:
+
+```clojure
+(->
+  (s/make-context)
+  (put-variable 'X4, 'A1)
+  (put-structure 'h|2, 'A2)
+  (set-value 'X4)
+  (set-variable 'X5)
+  (put-structure 'f|1, 'A3)
+  (set-value 'X5)
+  heap
+  table)
+```
+gives:
+```
++------+--------+
+| key | value   |
++-----+---------+
+| 0   | [REF 0] |
+| 1   | [STR 2] |
+| 2   | h|2     |
+| 3   | [REF 0] |
+| 4   | [REF 4] |
+| 5   | [STR 6] |
+| 6   | f|1     |
+| 7   | [REF 4] |
++-----+---------+
+```
+Apart from the term root, the heap is layed out _similarly_ to that of
+Figure 2.3 as below, albeit with different references:
+```
+                      +-----+---------+
++-----+---------+     | key | value   |
+| key | value   |     +-----+---------+
++-----+---------+     | 0   | [REF 0] |
+| 0   | [STR 1] |     | 1   | [STR 2] |
+| 1   | h|2     |     | 2   | h|2     |
+| 2   | [REF 2] |     | 3   | [REF 0] |
+| 3   | [REF 3] |     | 4   | [REF 4] |
+| 4   | [STR 5] |     | 5   | [STR 6] |
+| 5   | f|1     |     | 6   | f|1     |
+| 6   | [REF 3] |     | 7   | [REF 4] |
+| 7   | [STR 8] |     +-----+---------+
+| 8   | p|3     |
+| 9   | [REF 2] |
+| 10  | [STR 1] |
+| 11  | [STR 5] |
++-----+---------+
+```
 
 ### Exercise 2.7 (pg. 18)
 
@@ -572,8 +621,73 @@ TODO
 > terms _p(Z, h(Z, W), f(W))_ and _p(f(X), h(Y, f(a)), Y)_. That is, the binding
 > _W = f(a)_, _X = f(a)_, _Y = f(f(a))_, _Z = f(f(a))_.
 
-TODO
+Defining _p/3_ as:
 
+```clojure
+(def [p|3
+  (list
+    [get-structure 'f|1, 'A1]
+    [unify-variable 'X4]
+    [get-structure 'h|2, 'A2]
+    [unify-variable 'X5]
+    [unify-variable 'X6]
+    [get-value 'X5, 'A3]
+    [get-structure 'f|1, 'X6]
+    [unify-variable 'X7]
+    [get-structure 'a|0, 'X7]
+    [proceed]))
+```
+Then, executing the program term directly after the query term:
+
+```clojure
+(->
+  ctx
+  (put-variable 'X4, 'A1)
+  (put-structure 'h|2, 'A2)
+  (set-value 'X4)
+  (set-variable 'X5)
+  (put-structure 'f|1, 'A3)
+  (set-value 'X5)
+  (load 'p|3 p|3)
+  (call 'p|3)
+  diag
+  (tee #(println "W =" (resolve-struct % (s/register-address 'X4))))
+  (tee #(println "X =" (resolve-struct % (s/register-address 'X4))))
+  (tee #(println "Y =" (resolve-struct % (s/register-address 'A3))))
+  (tee #(println "Z =" (resolve-struct % (s/register-address 'X5)))))
+```
+
+gives:
+
+```
+Heap                   Registers             Variables
+------------------------------------------------------
+┌──────┬────────────┐  ┌─────┬────────────┐  ┌───────┐
+│ key  │ value      │  │ key │ value      │  │ value │
+├──────┼────────────┤  ├─────┼────────────┤  ├───────┤
+│ 1000 ╎ [STR 1009] │  │ X1  ╎ [REF 1000] │  └───────┘
+│ 1001 ╎ [STR 1002] │  │ X2  ╎ [STR 1002] │
+│ 1002 ╎ h|2        │  │ X3  ╎ [STR 1006] │
+│ 1003 ╎ [REF 1000] │  │ X4  ╎ [REF 1010] │
+│ 1004 ╎ [STR 1012] │  │ X5  ╎ [REF 1000] │
+│ 1005 ╎ [STR 1006] │  │ X6  ╎ [REF 1004] │
+│ 1006 ╎ f|1        │  │ X7  ╎ [REF 1013] │
+│ 1007 ╎ [REF 1004] │  └─────┴────────────┘
+│ 1008 ╎ [STR 1009] │
+│ 1009 ╎ f|1        │
+│ 1010 ╎ [REF 1004] │
+│ 1011 ╎ [STR 1012] │
+│ 1012 ╎ f|1        │
+│ 1013 ╎ [STR 1015] │
+│ 1014 ╎ [STR 1015] │
+│ 1015 ╎ a|0        │
+└──────┴────────────┘
+
+W = f(a)
+X = f(a)
+Y = f(f(a))
+Z = f(f(a))
+```
 ### Exercise 2.8 (pg. 18)
 
 > What are the respective sequences of ℳ₁ instructions for ℒ₁ _query_
