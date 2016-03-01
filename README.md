@@ -6,26 +6,28 @@ A gradual WAM implementation in Clojure following Hassan Aït-Kaci's tutorial re
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Language ℒ₀](#language-ℒ)
+- [Language ℒ₀ – Unification](#language-%E2%84%92%E2%82%80-%E2%80%93-unification)
   - [Exercise 2.1 (pg. 9)](#exercise-21-pg-9)
-  - [EBNF ℒ₀ Grammar & Parser Combinators](#ebnf-ℒ-grammar--parser-combinators)
-  - [Compiling ℒ₀ queries](#compiling-ℒ-queries)
-  - [Compiling ℒ₀ programs](#compiling-ℒ-programs)
+  - [EBNF ℒ₀ Grammar & Parser Combinators](#ebnf-%E2%84%92%E2%82%80-grammar-&-parser-combinators)
+  - [Compiling ℒ₀ queries](#compiling-%E2%84%92%E2%82%80-queries)
+  - [Compiling ℒ₀ programs](#compiling-%E2%84%92%E2%82%80-programs)
   - [Exercise 2.2 (pg. 14)](#exercise-22-pg-14)
   - [Exercise 2.3 (pg. 14)](#exercise-23-pg-14)
   - [Exercise 2.4 (pg. 14)](#exercise-24-pg-14)
   - [Exercise 2.5 (pg. 14)](#exercise-25-pg-14)
-- [Language ℒ₁](#language-ℒ-1)
+- [Language ℒ₁ – Argument Registers](#language-%E2%84%92%E2%82%81-%E2%80%93-argument-registers)
   - [Exercise 2.6 (pg. 18)](#exercise-26-pg-18)
   - [Exercise 2.7 (pg. 18)](#exercise-27-pg-18)
   - [Exercise 2.8 (pg. 18)](#exercise-28-pg-18)
   - [Exercise 2.9 (pg. 19)](#exercise-29-pg-19)
+- [Language ℒ₂ – Flat Resolution](#language-%E2%84%92%E2%82%82-%E2%80%93-flat-resolution)
+- [Language ℒ₃ – Prolog](#language-%E2%84%92%E2%82%83-%E2%80%93-prolog)
 - [References](#references)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-## Language ℒ₀
+## Language ℒ₀ – Unification
 
 ### Exercise 2.1 (pg. 9)
 
@@ -555,7 +557,7 @@ Y = f(f(a))
 Z = f(f(a))
 ```
 
-## Language ℒ₁
+## Language ℒ₁ – Argument Registers
 
 ### Exercise 2.6 (pg. 18)
 
@@ -651,10 +653,10 @@ Then, executing the program term directly after the query term:
   (load 'p|3 p|3)
   (call 'p|3)
   diag
-  (tee #(println "W =" (resolve-struct % (s/register-address 'X4))))
-  (tee #(println "X =" (resolve-struct % (s/register-address 'X4))))
-  (tee #(println "Y =" (resolve-struct % (s/register-address 'A3))))
-  (tee #(println "Z =" (resolve-struct % (s/register-address 'X5)))))
+  (tee #(println "W =" (resolve-struct % (register-address 'X4))))
+  (tee #(println "X =" (resolve-struct % (register-address 'X4))))
+  (tee #(println "Y =" (resolve-struct % (register-address 'A3))))
+  (tee #(println "Z =" (resolve-struct % (register-address 'X5)))))
 ```
 
 gives:
@@ -693,12 +695,103 @@ Z = f(f(a))
 > What are the respective sequences of ℳ₁ instructions for ℒ₁ _query_
 > term ?-_p(f(X), h(Y, f(a)), y)_ and ℒ₁ _program_ term _p(Z, h(Z, W), f(W))_?
 
-TODO
+There is a bit of a leap here in the tutorial, and I'm not sure if I fully
+understand, but the query term ?-_p(f(X), h(Y, f(a)), y)_ is now build from
+the following instructions:
+
+```
+put-structure f|1, A1
+set-variable X4)
+put-structure h|2, A2
+set-variable A3)
+put-structure f|1, X5
+put-structure a|0, X6
+set-value A3
+call p|3
+```
+
+And the program term _p(Z, h(Z, W), f(W))_ is comprised of:
+
+```
+unify-variable A1
+get-structure h|2, A2
+unify-value A1
+unify-variable X4
+get-structure f|1, A3
+unify-value X4
+proceed
+```
 
 ### Exercise 2.9 (pg. 19)
 
 > After doing [Exercise 2.8](#exercise-28-pg-18), verify that the effect of executing the
 > sequence you produced yields the same solution as that of [Exercise 2.7](#exercise-27-pg-18).
+
+
+Executing the program against the query term does give the same unification
+result as previously:
+
+```clojure
+(def p|3
+  (list
+    [unify-variable 'A1]
+    [get-structure 'h|2, 'A2]
+    [unify-value 'A1]
+    [unify-variable 'X4]
+    [get-structure 'f|1, 'A3]
+    [unify-value 'X4]
+    [proceed]))
+
+(->
+  ctx
+  (put-structure 'f|1, 'A1)
+  (set-variable 'X4)
+  (put-structure 'h|2, 'A2)
+  (set-variable 'A3)
+  (put-structure 'f|1, 'X5)
+  (put-structure 'a|0, 'X6)
+  (set-value 'A3)
+  (load 'p|3 p|3)
+  (call 'p|3)
+  (diag)
+  (tee #(println "W =" (resolve-struct % (register-address 'X4))))
+  (tee #(println "X =" (resolve-struct % (register-address 'X4))))
+  (tee #(println "Y =" (resolve-struct % (register-address 'A3))))
+  (tee #(println "Z =" (resolve-struct % (register-address 'A1)))))
+```
+
+Outputs:
+
+```
+Heap                   Registers             Variables
+------------------------------------------------------
+┌──────┬────────────┐  ┌─────┬────────────┐  ┌───────┐
+│ key  │ value      │  │ key │ value      │  │ value │
+├──────┼────────────┤  ├─────┼────────────┤  ├───────┤
+│ 1000 ╎ [STR 1001] │  │ X1  ╎ [STR 1001] │  └───────┘
+│ 1001 ╎ f|1        │  │ X2  ╎ [STR 1004] │
+│ 1002 ╎ [STR 1007] │  │ X3  ╎ [REF 1005] │
+│ 1003 ╎ [STR 1004] │  │ X4  ╎ [STR 1007] │
+│ 1004 ╎ h|2        │  │ X5  ╎ [STR 1007] │
+│ 1005 ╎ [STR 1001] │  │ X6  ╎ [STR 1009] │
+│ 1006 ╎ [STR 1007] │  └─────┴────────────┘
+│ 1007 ╎ f|1        │
+│ 1008 ╎ [STR 1009] │
+│ 1009 ╎ a|0        │
+│ 1010 ╎ [REF 1005] │
+└──────┴────────────┘
+
+W = f(a)
+X = f(a)
+Y = f(f(a))
+Z = f(f(a))
+```
+
+## Language ℒ₂ – Flat Resolution
+
+TODO
+
+## Language ℒ₃ – Prolog
 
 TODO
 
