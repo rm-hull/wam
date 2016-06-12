@@ -24,9 +24,9 @@
   (:require
     [clojure.string :as s]
     [clojure.set :refer [union]]
+    [jasentaa.parser :refer [parse-all]]
     [wam.instruction-set :refer :all]
     [wam.store :refer [friendly]]
-    [wam.parser :refer [parse-all]]
     [wam.grammar :as g]
     [wam.graph-search :refer :all]))
 

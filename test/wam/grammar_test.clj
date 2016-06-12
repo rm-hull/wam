@@ -22,10 +22,12 @@
 
 
 (ns wam.grammar-test
-  (:import [wam.grammar Constant Variable Structure Functor])
+  (:import
+    [java.text ParseException]
+    [wam.grammar Constant Variable Structure Functor])
   (:require
     [clojure.test :refer :all]
-    [wam.parser :refer [parse-all]]
+    [jasentaa.parser :refer [parse-all]]
     [wam.grammar :refer [structure predicate constant variable]]))
 
 (deftest check-variable
@@ -34,19 +36,25 @@
     (is (= (parse-all variable "TEMP") (Variable. 'TEMP)))
     (is (= (parse-all variable "Temp") (Variable. 'Temp)))
     (is (= (parse-all variable "_") (Variable. '_)))
-    (is (nil? (parse-all variable "w")))
+    (is (thrown-with-msg?
+          ParseException #"Unable to parse text"
+          (parse-all variable "w")))
     (is (not= (parse-all variable "W") (Variable. 'X)))))
 
 (deftest check-constant
   (testing "Constants"
     (is (= (parse-all constant "3") (Constant. 3)))
-    (is (nil? (parse-all constant "W")))))
+    (is (thrown-with-msg?
+          ParseException #"Unable to parse text"
+          (parse-all constant "W")))))
 
 (deftest check-predicate
   (testing "Predicates"
     (is (= (parse-all predicate "fred") "fred"))
     (is (= (parse-all predicate "b4rn3y") "b4rn3y"))
-    (is (nil? (parse-all predicate "Wilma!")))))
+    (is (thrown-with-msg?
+          ParseException #"Unable to parse text"
+          (parse-all predicate "Wilma!")))))
 
 (deftest check-structure
   (testing "Structures"

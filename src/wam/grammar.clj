@@ -23,7 +23,10 @@
 (ns wam.grammar
   (:refer-clojure :exclude [list])
   (:require
-    [wam.parser :refer :all]))
+    [jasentaa.monad :as m]
+    [jasentaa.position :refer [strip-location]]
+    [jasentaa.parser.basic :refer :all]
+    [jasentaa.parser.combinators :refer :all]))
 
 (defrecord Constant [value]
   Object
@@ -67,53 +70,53 @@
 (def digit (from-re #"[0-9]"))
 
 (def number
-  (do*
+  (m/do*
     (v <- (plus digit))
-    (return (Integer/parseInt (apply str v)))))
+    (m/return (Integer/parseInt (strip-location v)))))
 
 (def lower-alpha (from-re #"[a-z]"))
 
 (def upper-alpha (from-re #"[A-Z]"))
 
-(def alpha-num (any-of lower-alpha upper-alpha digit))
+(def alpha-num (strip-location (any-of lower-alpha upper-alpha digit)))
 
 (def predicate
-  (do*
+  (m/do*
     (a <- lower-alpha)
     (as <- (many alpha-num))
-    (return (apply str (cons a as)))))
+    (m/return (strip-location (cons a as)))))
 
 (def constant
-  (do*
+  (m/do*
     ; (c <- (any-of predicate number))
     (n <- number)
-    (return (Constant. n))))
+    (m/return (Constant. n))))
 
 (def variable
   (or-else
-    (do*
+    (m/do*
       (a <- upper-alpha)
       (as <- (many alpha-num))
-      (return (Variable. (symbol (apply str (cons a as))))))
-    (do*
+      (m/return (Variable. (symbol (strip-location (cons a as))))))
+    (m/do*
       (match "_")
-      (return (Variable. '_)))))
+      (m/return (Variable. '_)))))
 
 (declare list)
 
 (def structure
   (or-else
-    (do*
+    (m/do*
       (p <- predicate)
-      (return (Structure.
+      (m/return (Structure.
                 (Functor. (symbol  p) 0)
                 nil)))
-    (do*
+    (m/do*
       (p <- predicate)
-      (match "(")
+      (symb "(")
       (l <- list)
-      (match ")")
-      (return (Structure.
+      (symb ")")
+      (m/return (Structure.
                 (Functor. (symbol p) (count l))
                 l)))))
 
@@ -121,7 +124,4 @@
   (any-of variable constant structure))
 
 (def list
-  (do*
-    (fst <- element)
-    (rst <- (many (do* spaces (match ",") spaces element)))
-    (return (cons fst rst))))
+  (separated-by (token element) (symb ",")))

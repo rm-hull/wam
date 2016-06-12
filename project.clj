@@ -1,4 +1,4 @@
-(defproject rm-hull/wam "0.0.1-SNAPSHOT"`
+(defproject rm-hull/wam "0.0.1-SNAPSHOT"
   :description "Warren's Abstract Machine"
   :url "https://github.com/rm-hull/wam"
   :license {
@@ -6,18 +6,18 @@
     :url "http://opensource.org/licenses/MIT"}
   :dependencies [
     [org.clojure/clojure "1.8.0"]
-    [table "0.5.0"]]
+    [rm-hull/jasentaa "0.2.3"]
+    [rm-hull/table "0.6.0"]]
   :scm {:url "git@github.com:rm-hull/wam.git"}
   :plugins [
-    [codox "0.9.1"] ]
+    [codox "0.9.5"] ]
   :source-paths ["src"]
   :jar-exclusions [#"(?:^|/).git"]
   :codox {
-    :sources ["src"]
-    :output-dir "doc/api"
-    :src-dir-uri "http://github.com/rm-hull/wam/blob/master/"
-    :src-linenum-anchor-prefix "L" }
-  :min-lein-version "2.5.3"
+    :source-paths ["src"]
+    :output-path "doc/api"
+    :source-uri "http://github.com/rm-hull/wam/blob/master/{filepath}#L{line}"}
+  :min-lein-version "2.6.1"
   :profiles {
     :dev {
       :global-vars {*warn-on-reflection* true}

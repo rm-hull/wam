@@ -24,11 +24,11 @@
 (ns wam.compiler-test
   (:require
     [clojure.test :refer :all]
+    [jasentaa.parser :refer [parse-all]]
     [wam.assert-helpers :refer :all]
     [wam.anciliary :refer [unify resolve-struct]]
     [wam.compiler :refer :all]
     [wam.instruction-set :refer :all]
-    [wam.parser :refer [parse-all]]
     [wam.grammar :refer [structure]]
     [wam.store :as s]))
 
