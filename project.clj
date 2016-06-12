@@ -10,7 +10,7 @@
     [rm-hull/table "0.6.0"]]
   :scm {:url "git@github.com:rm-hull/wam.git"}
   :plugins [
-    [codox "0.9.5"] ]
+    [lein-codox "0.9.5"]]
   :source-paths ["src"]
   :jar-exclusions [#"(?:^|/).git"]
   :codox {
