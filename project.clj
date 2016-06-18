@@ -9,8 +9,6 @@
     [rm-hull/jasentaa "0.2.3"]
     [rm-hull/table "0.6.0"]]
   :scm {:url "git@github.com:rm-hull/wam.git"}
-  :plugins [
-    [lein-codox "0.9.5"]]
   :source-paths ["src"]
   :jar-exclusions [#"(?:^|/).git"]
   :codox {
@@ -22,4 +20,5 @@
     :dev {
       :global-vars {*warn-on-reflection* true}
       :plugins [
+        [lein-codox "0.9.5"]
         [lein-cloverage "1.0.6"]]}})
