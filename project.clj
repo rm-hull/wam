@@ -5,7 +5,6 @@
     :name "The MIT License (MIT)"
     :url "http://opensource.org/licenses/MIT"}
   :dependencies [
-    [org.clojure/clojure "1.8.0"]
     [rm-hull/jasentaa "0.2.3"]
     [rm-hull/table "0.6.0"]]
   :scm {:url "git@github.com:rm-hull/wam.git"}
@@ -20,5 +19,7 @@
     :dev {
       :global-vars {*warn-on-reflection* true}
       :plugins [
-        [lein-codox "0.9.5"]
-        [lein-cloverage "1.0.6"]]}})
+        [lein-codox "0.10.0"]
+        [lein-cloverage "1.0.7"]]
+      :dependencies [
+        [org.clojure/clojure "1.8.0"]]}})
