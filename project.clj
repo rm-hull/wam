@@ -6,7 +6,7 @@
     :url "http://opensource.org/licenses/MIT"}
   :dependencies [
     [rm-hull/jasentaa "0.2.3"]
-    [rm-hull/table "0.6.0"]]
+    [rm-hull/table "0.6.4"]]
   :scm {:url "git@github.com:rm-hull/wam.git"}
   :source-paths ["src"]
   :jar-exclusions [#"(?:^|/).git"]
@@ -19,7 +19,7 @@
     :dev {
       :global-vars {*warn-on-reflection* true}
       :plugins [
-        [lein-codox "0.10.0"]
-        [lein-cloverage "1.0.7"]]
+        [lein-codox "0.10.3"]
+        [lein-cloverage "1.0.9"]]
       :dependencies [
         [org.clojure/clojure "1.8.0"]]}})
