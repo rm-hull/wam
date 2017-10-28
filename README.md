@@ -11,22 +11,22 @@ A gradual WAM implementation in Clojure following Hassan Aït-Kaci's tutorial re
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Language ℒ₀ – Unification](#language-%E2%84%92%E2%82%80-%E2%80%93-unification)
+- [Language ℒ₀ – Unification](#language-%E2%84%92%E2%82%80--unification)
   - [Exercise 2.1 (pg. 9)](#exercise-21-pg-9)
-  - [EBNF ℒ₀ Grammar & Parser Combinators](#ebnf-%E2%84%92%E2%82%80-grammar-&-parser-combinators)
+  - [EBNF ℒ₀ Grammar & Parser Combinators](#ebnf-%E2%84%92%E2%82%80-grammar--parser-combinators)
   - [Compiling ℒ₀ queries](#compiling-%E2%84%92%E2%82%80-queries)
   - [Compiling ℒ₀ programs](#compiling-%E2%84%92%E2%82%80-programs)
   - [Exercise 2.2 (pg. 14)](#exercise-22-pg-14)
   - [Exercise 2.3 (pg. 14)](#exercise-23-pg-14)
   - [Exercise 2.4 (pg. 14)](#exercise-24-pg-14)
   - [Exercise 2.5 (pg. 14)](#exercise-25-pg-14)
-- [Language ℒ₁ – Argument Registers](#language-%E2%84%92%E2%82%81-%E2%80%93-argument-registers)
+- [Language ℒ₁ – Argument Registers](#language-%E2%84%92%E2%82%81--argument-registers)
   - [Exercise 2.6 (pg. 18)](#exercise-26-pg-18)
   - [Exercise 2.7 (pg. 18)](#exercise-27-pg-18)
   - [Exercise 2.8 (pg. 18)](#exercise-28-pg-18)
   - [Exercise 2.9 (pg. 19)](#exercise-29-pg-19)
-- [Language ℒ₂ – Flat Resolution](#language-%E2%84%92%E2%82%82-%E2%80%93-flat-resolution)
-- [Language ℒ₃ – Prolog](#language-%E2%84%92%E2%82%83-%E2%80%93-prolog)
+- [Language ℒ₂ – Flat Resolution](#language-%E2%84%92%E2%82%82--flat-resolution)
+- [Language ℒ₃ – Prolog](#language-%E2%84%92%E2%82%83--prolog)
 - [References](#references)
 - [License](#license)
 
