@@ -24,9 +24,9 @@
 (ns wam.anciliary
   (:refer-clojure :exclude [deref])
   (:require
-    [clojure.string :refer [join]]
-    [wam.store :as s]
-    [wam.functor :as f]))
+   [clojure.string :refer [join]]
+   [wam.store :as s]
+   [wam.functor :as f]))
 
 (def cell-type
   "Convenience wrapper to obtain the cell type"
@@ -42,9 +42,9 @@
   [allowed-types]
   (fn [cell]
     (and
-      (coll? cell)
-      (= (count cell) 2)
-      (contains? allowed-types (cell-type cell)))))
+     (coll? cell)
+     (= (count cell) 2)
+     (contains? allowed-types (cell-type cell)))))
 
 (def ref?
   "Convenience wrapper for REF cell types"
@@ -82,12 +82,12 @@
    interleaving with v2, incrementing at each reduction."
   [stack n v1 v2]
   (reduce
-    (fn [stack i] ( ->
-                    stack
-                    (push (+ v1 i))
-                    (push (+ v2 i))))
-    stack
-    (range 1 (inc n))))
+   (fn [stack i] (->
+                  stack
+                  (push (+ v1 i))
+                  (push (+ v2 i))))
+   stack
+   (range 1 (inc n))))
 
 (defn bind
   "Effectuate the binding of the heap cell to the address"
@@ -129,8 +129,6 @@
                   (recur ctx fail (push-args stack (f/arity f|N1) v1 v2))
                   (recur ctx true stack))))))))))
 
-
-
 (declare resolve-struct)
 
 (defn- resolve-functor [ctx addr]
@@ -140,7 +138,6 @@
                          (resolve-struct ctx (+ addr i 1))))
         decorate (fn [coll] (if (seq coll) (str "(" (join ", " coll) ")")))]
     (str (f/name functor) (decorate (process-args)))))
-
 
 (defn resolve-struct [ctx addr]
   (let [v (s/get-store ctx (deref ctx addr))]
