@@ -24,29 +24,29 @@
 ;; ℳ₀ machine instructions
 (ns wam.instruction-set-test
   (:require
-    [clojure.test :refer :all]
-    [wam.assert-helpers :refer :all]
-    [wam.anciliary :refer [resolve-struct]]
-    [wam.instruction-set :refer :all]
-    [wam.store :as s]))
+   [clojure.test :refer :all]
+   [wam.assert-helpers :refer :all]
+   [wam.anciliary :refer [resolve-struct]]
+   [wam.instruction-set :refer :all]
+   [wam.store :as s]))
 
 (def ctx (s/make-context))
 
 (deftest check-set-value
   (testing "set-value"
     (let [new-ctx (->
-                    ctx
-                    (s/set-register 'X3 27)
-                    (set-value 'X3))]
+                   ctx
+                   (s/set-register 'X3 27)
+                   (set-value 'X3))]
       (is (= (s/pointer new-ctx :h) (heap 1)))
       (is (= (s/get-store new-ctx (heap 0)) 27)))))
 
 (deftest check-set-variable
   (testing "set-variable"
     (let [new-ctx (->
-                    ctx
-                    (s/set-register 'X4 55)
-                    (set-variable 'X4))]
+                   ctx
+                   (s/set-register 'X4 55)
+                   (set-variable 'X4))]
       (is (= (s/pointer new-ctx :h) (heap 1)))
       (is (= (s/get-store new-ctx (heap 0)) ['REF (heap 0)]))
       (is (= (s/get-register new-ctx 'X4) ['REF (heap 0)])))))
@@ -54,8 +54,8 @@
 (deftest check-put-structure
   (testing "put-structure"
     (let [new-ctx (->
-                    ctx
-                    (put-structure 'f|n 'X3))]
+                   ctx
+                   (put-structure 'f|n 'X3))]
       (is (= (s/pointer new-ctx :h) (heap 2)))
       (is (= (s/get-store new-ctx (heap 0)) ['STR (heap 1)]))
       (is (= (s/get-store new-ctx (heap 1)) 'f|n))
@@ -63,58 +63,58 @@
 
 (deftest check-get-structure
   (testing "get-structure")
-    (let [ctx (->
-                ctx
-                (s/set-store (heap 0) ['REF (heap 3)])
-                (s/set-store (heap 1) ['STR (heap 2)])
-                (s/set-store (heap 2) 'f|0)
-                (s/set-store (heap 3) ['REF (heap 3)])
-                (assoc-in [:pointer :h] (heap 4))
-                (s/set-register 'X1 ['REF (heap 0)])
-                (s/set-register 'X2 ['REF (heap 1)])
-                (s/set-register 'X3 ['REF (heap 2)]))]
+  (let [ctx (->
+             ctx
+             (s/set-store (heap 0) ['REF (heap 3)])
+             (s/set-store (heap 1) ['STR (heap 2)])
+             (s/set-store (heap 2) 'f|0)
+             (s/set-store (heap 3) ['REF (heap 3)])
+             (assoc-in [:pointer :h] (heap 4))
+             (s/set-register 'X1 ['REF (heap 0)])
+             (s/set-register 'X2 ['REF (heap 1)])
+             (s/set-register 'X3 ['REF (heap 2)]))]
 
-      (testing "REF"
-        (let [new-ctx (get-structure ctx 'g|2 'X1)]
-          (is (= (s/pointer new-ctx :h) (heap 6)))
-          (is (= (:mode new-ctx) :write))
-          (is (false? (:fail new-ctx)))
-          (is (= (s/get-store new-ctx (heap 3)) ['STR (heap 5)]))
-          (is (= (s/get-store new-ctx (heap 4)) ['STR (heap 5)]))
-          (is (= (s/get-store new-ctx (heap 5)) 'g|2))))
+    (testing "REF"
+      (let [new-ctx (get-structure ctx 'g|2 'X1)]
+        (is (= (s/pointer new-ctx :h) (heap 6)))
+        (is (= (:mode new-ctx) :write))
+        (is (false? (:fail new-ctx)))
+        (is (= (s/get-store new-ctx (heap 3)) ['STR (heap 5)]))
+        (is (= (s/get-store new-ctx (heap 4)) ['STR (heap 5)]))
+        (is (= (s/get-store new-ctx (heap 5)) 'g|2))))
 
-      (testing "STR (fail)"
-        (let [new-ctx (get-structure ctx 'g|2 'X2)]
-          (is (true? (:fail new-ctx)))))
+    (testing "STR (fail)"
+      (let [new-ctx (get-structure ctx 'g|2 'X2)]
+        (is (true? (:fail new-ctx)))))
 
-      (testing "STR (match)"
-        (let [new-ctx (get-structure ctx 'f|0 'X2)]
-          (is (= (s/pointer new-ctx :s) (heap 3)))
-          (is (= (:mode new-ctx) :read))
-          (is (false? (:fail new-ctx)))))
+    (testing "STR (match)"
+      (let [new-ctx (get-structure ctx 'f|0 'X2)]
+        (is (= (s/pointer new-ctx :s) (heap 3)))
+        (is (= (:mode new-ctx) :read))
+        (is (false? (:fail new-ctx)))))
 
-      (testing "no match"
-        (let [new-ctx (get-structure ctx 'g|2 'X3)]
-          (is (true? (:fail new-ctx)))))))
+    (testing "no match"
+      (let [new-ctx (get-structure ctx 'g|2 'X3)]
+        (is (true? (:fail new-ctx)))))))
 
 (deftest check-unify-variable
   (testing "unify-variable"
     (testing "read-mode"
       (let [new-ctx (->
-                      ctx
-                      (s/mode :read)
-                      (s/set-store (heap 0) ['REF 3])
-                      (unify-variable 'X1))]
+                     ctx
+                     (s/mode :read)
+                     (s/set-store (heap 0) ['REF 3])
+                     (unify-variable 'X1))]
         (is (= (s/get-register new-ctx 'X1) ['REF 3]))
         (is (= (s/pointer new-ctx :s) (heap 1)))))
 
     (testing "write-mode"
       (let [new-ctx (->
-                      ctx
-                      (s/mode :write)
-                      (assoc-in [:pointer :h] (heap 2))
-                      (assoc-in [:pointer :s] (heap 5))
-                      (unify-variable 'X1))]
+                     ctx
+                     (s/mode :write)
+                     (assoc-in [:pointer :h] (heap 2))
+                     (assoc-in [:pointer :s] (heap 5))
+                     (unify-variable 'X1))]
         (is (= (s/get-store new-ctx (heap 2)) ['REF (heap 2)]))
         (is (= (s/get-register new-ctx 'X1) ['REF (heap 2)]))
         (is (= (s/pointer new-ctx :h) (heap 3)))
@@ -123,24 +123,24 @@
     (testing "unknown mode"
       (is (thrown? IllegalArgumentException
                    (->
-                     ctx
-                     (assoc :mode :banana)
-                     (unify-variable 'X5)))))))
+                    ctx
+                    (assoc :mode :banana)
+                    (unify-variable 'X5)))))))
 
 (deftest check-unify-value
   (testing "unify-value"
     (testing "read-mode"
       ;; TODO
-      )
+)
 
     (testing "write-mode"
       (let [new-ctx (->
-                      ctx
-                      (s/mode :write)
-                      (assoc-in [:pointer :h] 9)
-                      (assoc-in [:pointer :s] 3)
-                      (s/set-register 'X2 ['STR 1])
-                      (unify-value 'X2))]
+                     ctx
+                     (s/mode :write)
+                     (assoc-in [:pointer :h] 9)
+                     (assoc-in [:pointer :s] 3)
+                     (s/set-register 'X2 ['STR 1])
+                     (unify-value 'X2))]
         (is (= (s/get-store new-ctx 9) ['STR 1]))
         (is (= (s/pointer new-ctx :h) 10))
         (is (= (s/pointer new-ctx :s) 4))))
@@ -148,27 +148,27 @@
     (testing "unknown mode"
       (is (thrown? IllegalArgumentException
                    (->
-                     ctx
-                     (assoc :mode :banana)
-                     (unify-value 'X5)))))))
+                    ctx
+                    (assoc :mode :banana)
+                    (unify-value 'X5)))))))
 
 (deftest ex2.1
   ; Compiled code for L0 query ?-p(Z,h(Z,W),f(W)).
 
   (is (tbl=
-    (->
-      ctx
-      (put-structure 'h|2, 'X3)
-      (set-variable 'X2)
-      (set-variable 'X5)
-      (put-structure 'f|1, 'X4)
-      (set-value 'X5)
-      (put-structure 'p|3, 'X1)
-      (set-value 'X2)
-      (set-value 'X3)
-      (set-value 'X4)
-      s/heap)
-      "+------+------------+
+       (->
+        ctx
+        (put-structure 'h|2, 'X3)
+        (set-variable 'X2)
+        (set-variable 'X5)
+        (put-structure 'f|1, 'X4)
+        (set-value 'X5)
+        (put-structure 'p|3, 'X1)
+        (set-value 'X2)
+        (set-value 'X3)
+        (set-value 'X4)
+        s/heap)
+       "+------+------------+
        | key  | value      |
        +------+------------+
        | 1000 | [STR 1001] |
@@ -193,63 +193,60 @@
       (is (= (s/get-register new-ctx 'X4) ['REF (heap 0)]))
       (is (= (s/get-register new-ctx 'A1) ['REF (heap 0)])))))
 
-
 (deftest check-put-value
   (testing "put-value"
     (let [new-ctx (->
-                    ctx
-                    (s/set-register 'X4 32)
-                    (put-value 'X4 'A1))]
+                   ctx
+                   (s/set-register 'X4 32)
+                   (put-value 'X4 'A1))]
       (is (= (s/get-register new-ctx 'A1) 32)))))
-
 
 (deftest check-get-variable
   (testing "get-variable"
     (let [new-ctx (->
-                    ctx
-                    (s/set-register 'A1 99)
-                    (get-variable 'X4 'A1))]
+                   ctx
+                   (s/set-register 'A1 99)
+                   (get-variable 'X4 'A1))]
       (is (= (s/get-register new-ctx 'X4) 99)))))
 
 (deftest check-get-value
   (testing "get-value"
     (let [new-ctx (->
-                    ctx
-                    (s/set-register 'A1 99)
-                    (get-value 'X1 'A1))]
+                   ctx
+                   (s/set-register 'A1 99)
+                   (get-value 'X1 'A1))]
       (is (false? (:fail new-ctx 'X4))))))
-
 
 (deftest check-call
   (testing "call"
     (testing "non-existent program"
       (let [ctx (->
-                  (s/make-context)
-                  (call 'p|5))]
+                 (s/make-context)
+                 (call 'p|5))]
         (is (true? (:fail ctx)))
         (is (= (s/pointer ctx :p) 0))))
 
     (testing "simple proceed"
       (let [ctx (->
-                  (s/make-context)
-                  (s/load 'h|2 [[proceed]])
-                  (call 'h|2))]
+                 (s/make-context)
+                 (s/load 'h|2 [[proceed]])
+                 (call 'h|2))]
 
         (is (false? (:fail ctx)))
         (is (= (s/pointer ctx :p) 1))))))
 
 (deftest ex2.6
   (is (tbl=
-        (->
-          (s/make-context)
-          (put-variable 'X4, 'A1)
-          (put-structure 'h|2, 'A2)
-          (set-value 'X4)
-          (set-variable 'X5)
-          (put-structure 'f|1, 'A3)
-          (set-value 'X5)
-          s/heap)
-         "+------+------------+
+       (->
+        (s/make-context)
+        (put-variable 'X4, 'A1)
+        (put-structure 'h|2, 'A2)
+        (set-value 'X4)
+        (set-variable 'X5)
+        (put-structure 'f|1, 'A3)
+        (set-value 'X5)
+        s/heap)
+       "+------+------------+
           | key  | value      |
           +------+------------+
           | 1000 | [REF 1000] |
@@ -264,26 +261,26 @@
 
 (deftest ex2.7
   (let [p|3 (list
-              [get-structure 'f|1, 'A1]
-              [unify-variable 'X4]
-              [get-structure 'h|2, 'A2]
-              [unify-variable 'X5]
-              [unify-variable 'X6]
-              [get-value 'X5, 'A3]
-              [get-structure 'f|1, 'X6]
-              [unify-variable 'X7]
-              [get-structure 'a|0, 'X7]
-              [proceed])
+             [get-structure 'f|1, 'A1]
+             [unify-variable 'X4]
+             [get-structure 'h|2, 'A2]
+             [unify-variable 'X5]
+             [unify-variable 'X6]
+             [get-value 'X5, 'A3]
+             [get-structure 'f|1, 'X6]
+             [unify-variable 'X7]
+             [get-structure 'a|0, 'X7]
+             [proceed])
         ctx (->
-              (s/make-context)
-              (put-variable 'X4, 'A1)
-              (put-structure 'h|2, 'A2)
-              (set-value 'X4)
-              (set-variable 'X5)
-              (put-structure 'f|1, 'A3)
-              (set-value 'X5)
-              (s/load 'p|3 p|3)
-              (call 'p|3))
+             (s/make-context)
+             (put-variable 'X4, 'A1)
+             (put-structure 'h|2, 'A2)
+             (set-value 'X4)
+             (set-variable 'X5)
+             (put-structure 'f|1, 'A3)
+             (set-value 'X5)
+             (s/load 'p|3 p|3)
+             (call 'p|3))
 
         W (resolve-struct ctx (s/register-address 'X4))
         X (resolve-struct ctx (s/register-address 'X4))
@@ -295,8 +292,7 @@
     (println "W =" W)
     (println "X =" X)
     (println "Y =" Y)
-    (println "Z =" Z)
-    ))
+    (println "Z =" Z)))
 
 ; Heap                Registers           Variables
 ; -------------------------------------------------

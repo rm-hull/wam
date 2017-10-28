@@ -23,10 +23,10 @@
 (ns wam.grammar
   (:refer-clojure :exclude [list])
   (:require
-    [jasentaa.monad :as m]
-    [jasentaa.position :refer [strip-location]]
-    [jasentaa.parser.basic :refer :all]
-    [jasentaa.parser.combinators :refer :all]))
+   [jasentaa.monad :as m]
+   [jasentaa.position :refer [strip-location]]
+   [jasentaa.parser.basic :refer :all]
+   [jasentaa.parser.combinators :refer :all]))
 
 (defrecord Constant [value]
   Object
@@ -66,13 +66,12 @@
   (.write writer "|")
   (print-method (:arg-count x) writer))
 
-
 (def digit (from-re #"[0-9]"))
 
 (def number
   (m/do*
-    (v <- (plus digit))
-    (m/return (Integer/parseInt (strip-location v)))))
+   (v <- (plus digit))
+   (m/return (Integer/parseInt (strip-location v)))))
 
 (def lower-alpha (from-re #"[a-z]"))
 
@@ -82,43 +81,43 @@
 
 (def predicate
   (m/do*
-    (a <- lower-alpha)
-    (as <- (many alpha-num))
-    (m/return (strip-location (cons a as)))))
+   (a <- lower-alpha)
+   (as <- (many alpha-num))
+   (m/return (strip-location (cons a as)))))
 
 (def constant
   (m/do*
     ; (c <- (any-of predicate number))
-    (n <- number)
-    (m/return (Constant. n))))
+   (n <- number)
+   (m/return (Constant. n))))
 
 (def variable
   (or-else
-    (m/do*
-      (a <- upper-alpha)
-      (as <- (many alpha-num))
-      (m/return (Variable. (symbol (strip-location (cons a as))))))
-    (m/do*
-      (match "_")
-      (m/return (Variable. '_)))))
+   (m/do*
+    (a <- upper-alpha)
+    (as <- (many alpha-num))
+    (m/return (Variable. (symbol (strip-location (cons a as))))))
+   (m/do*
+    (match "_")
+    (m/return (Variable. '_)))))
 
 (declare list)
 
 (def structure
   (or-else
-    (m/do*
-      (p <- predicate)
-      (m/return (Structure.
-                (Functor. (symbol  p) 0)
-                nil)))
-    (m/do*
-      (p <- predicate)
-      (symb "(")
-      (l <- list)
-      (symb ")")
-      (m/return (Structure.
-                (Functor. (symbol p) (count l))
-                l)))))
+   (m/do*
+    (p <- predicate)
+    (m/return (Structure.
+               (Functor. (symbol  p) 0)
+               nil)))
+   (m/do*
+    (p <- predicate)
+    (symb "(")
+    (l <- list)
+    (symb ")")
+    (m/return (Structure.
+               (Functor. (symbol p) (count l))
+               l)))))
 
 (def element
   (any-of variable constant structure))

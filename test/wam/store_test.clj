@@ -23,9 +23,9 @@
 
 (ns wam.store-test
   (:require
-    [clojure.test :refer :all]
-    [wam.assert-helpers :refer :all]
-    [wam.store :as s]))
+   [clojure.test :refer :all]
+   [wam.assert-helpers :refer :all]
+   [wam.store :as s]))
 
 (deftest check-make-context
   (testing "Initial context creation"

@@ -24,9 +24,9 @@
 ;; ℳ₀ machine instructions
 (ns wam.instruction-set
   (:require
-    [clojure.string :refer [join]]
-    [wam.anciliary :as a]
-    [wam.store :as s]))
+   [clojure.string :refer [join]]
+   [wam.anciliary :as a]
+   [wam.store :as s]))
 
 (defn put-structure
   "This instruction marks the beginning of a structure (without
@@ -38,12 +38,12 @@
   (let [h (s/pointer ctx :h)
         v ['STR (inc h)]]
     (->
-      ctx
-      (s/set-store h v)
-      (s/set-store (inc h) f|N)
-      (s/set-register Xi v)
-      (s/increment :h)
-      (s/increment :h))))
+     ctx
+     (s/set-store h v)
+     (s/set-store (inc h) f|N)
+     (s/set-register Xi v)
+     (s/increment :h)
+     (s/increment :h))))
 
 ; Slight discrepancy between what David Warren refers to as 'put_variable'
 ; and Aït-Kaci as 'set_variable'
@@ -55,18 +55,18 @@
   (let [h (s/pointer ctx :h)
         v ['REF h]]
     (->
-      ctx
-      (s/set-store h v)
-      (s/set-register Xi v)
-      (s/increment :h))))
+     ctx
+     (s/set-store h v)
+     (s/set-register Xi v)
+     (s/increment :h))))
 
 (defn set-value [ctx Xi]
   (let [h (s/pointer ctx :h)
         v (s/get-register ctx Xi)]
     (->
-      ctx
-      (s/set-store h v)
-      (s/increment :h))))
+     ctx
+     (s/set-store h v)
+     (s/increment :h))))
 
 (defn get-structure [ctx f|N Xi]
   (let [addr (a/deref ctx Xi)
@@ -76,26 +76,25 @@
       (let [h (s/pointer ctx :h)
             v ['STR (inc h)]]
         (->
-          ctx
-          (s/set-store h v)
-          (s/set-store (inc h) f|N)
-          (a/bind addr h)
-          (s/increment :h)
-          (s/increment :h)
-          (s/mode :write)))
+         ctx
+         (s/set-store h v)
+         (s/set-store (inc h) f|N)
+         (a/bind addr h)
+         (s/increment :h)
+         (s/increment :h)
+         (s/mode :write)))
 
       (a/str? cell)
       (let [a (a/cell-value cell)]
         (if (= (s/get-store ctx a) f|N)
           (->
-            ctx
-            (assoc-in [:pointer :s] (inc a))
-            (s/mode :read))
+           ctx
+           (assoc-in [:pointer :s] (inc a))
+           (s/mode :read))
           (s/fail ctx)))
 
       :else
       (s/fail ctx))))
-
 
 (defn unify-variable [ctx Xi]
   (condp = (:mode ctx)
@@ -104,20 +103,19 @@
     (let [s (s/pointer ctx :s)
           v (s/get-store ctx s)]
       (->
-        ctx
-        (s/set-register Xi v)
-        (s/increment :s)))
+       ctx
+       (s/set-register Xi v)
+       (s/increment :s)))
 
     :write
     (let [h (s/pointer ctx :h)
           v ['REF h]]
       (->
-        ctx
-        (s/set-store h v)
-        (s/set-register Xi v)
-        (s/increment :h)
-        (s/increment :s)))))
-
+       ctx
+       (s/set-store h v)
+       (s/set-register Xi v)
+       (s/increment :h)
+       (s/increment :s)))))
 
 (defn unify-value [ctx Xi]
   (condp = (:mode ctx)
@@ -125,26 +123,25 @@
     :read
     (let [s (s/pointer ctx :s)]
       (->
-        ctx
-        (a/unify Xi s)
-        (s/increment :s)))
+       ctx
+       (a/unify Xi s)
+       (s/increment :s)))
 
     :write
     (->
-      ctx
-      (set-value Xi)
-      (s/increment :s))))
-
+     ctx
+     (set-value Xi)
+     (s/increment :s))))
 
 (defn put-variable [ctx Xn Ai]
   (let [h (s/pointer ctx :h)
         v ['REF h]]
     (->
-      ctx
-      (s/set-store h v)
-      (s/set-register Ai v)
-      (s/set-register Xn v)
-      (s/increment :h))))
+     ctx
+     (s/set-store h v)
+     (s/set-register Ai v)
+     (s/set-register Xn v)
+     (s/increment :h))))
 
 (defn put-value [ctx Xn Ai]
   (s/set-register ctx Ai (s/get-register ctx Xn)))
@@ -155,10 +152,8 @@
 (defn get-value [ctx Xn Ai]
   (a/unify ctx Xn Ai))
 
-
 (defn proceed [ctx]
-  ctx
-  )
+  ctx)
 
 (defn ^:private exec [ctx]
   (if (:fail ctx)
@@ -166,8 +161,8 @@
     (let [p (s/pointer ctx :p)
           [instr & args] (s/get-store ctx p)
           ctx (->
-                (apply instr ctx args)
-                (s/increment :p))]
+               (apply instr ctx args)
+               (s/increment :p))]
       (do
         (when (:trace ctx)
           (println (s/func-name instr) (join ", " args)))
@@ -179,8 +174,8 @@
 (defn call [ctx p|N]
   (if-let [new-p (s/program-address ctx p|N)]
     (->
-      ctx
-      (assoc-in [:pointer :p] new-p)
-      (exec))
+     ctx
+     (assoc-in [:pointer :p] new-p)
+     (exec))
     (s/fail ctx)))
 

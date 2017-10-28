@@ -24,8 +24,8 @@
 (ns wam.functor-test
   (:refer-clojure :exclude [name])
   (:require
-    [clojure.test :refer :all]
-    [wam.functor :refer :all]))
+   [clojure.test :refer :all]
+   [wam.functor :refer :all]))
 
 (deftest check-arity
   (testing "arity"
@@ -41,7 +41,6 @@
       (is (= (arity {:name "f" :arg-count 0}) 0))
       (is (= (arity {:name "f" :arg-count 1}) 1))
       (is (= (arity {:name "f" :arg-count 39}) 39)))))
-
 
 (deftest check-name
   (testing "name"

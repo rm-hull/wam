@@ -23,18 +23,15 @@
 
 (ns wam.assert-helpers
   (:require
-    [clojure.string :as str]
-    [table.core :as t]
-    [wam.store :as s]))
+   [clojure.string :as str]
+   [table.core :as t]
+   [wam.store :as s]))
 
 (defn heap [offset]
-  (+ s/heap-start offset) )
+  (+ s/heap-start offset))
 
 (defn register [offset]
-  (+ s/register-start offset) )
-
-
-
+  (+ s/register-start offset))
 
 ; Some helper functions to get round limitations in table
 (defn- inflate [table]
@@ -46,28 +43,26 @@
 
 (def instr
   (comp
-    t/table
-    inflate
-    (headers "instr" "arg1" "arg2")
-    (partial map (fn [[instr & args]] (cons (s/func-name instr) args)))))
+   t/table
+   inflate
+   (headers "instr" "arg1" "arg2")
+   (partial map (fn [[instr & args]] (cons (s/func-name instr) args)))))
 
 (defn- line-trim [s]
   (->>
-    s
-    (str/split-lines)
-    (map str/trim)
-    (remove empty?)
-    (str/join "\n")))
-
+   s
+   (str/split-lines)
+   (map str/trim)
+   (remove empty?)
+   (str/join "\n")))
 
 (defn tbl= [actual expected]
   (=
-    (line-trim (with-out-str (t/table actual)))
-    (line-trim expected)))
-
+   (line-trim (with-out-str (t/table actual)))
+   (line-trim expected)))
 
 (defn instr= [actual expected]
   (=
-    (line-trim (with-out-str (instr actual)))
-    (line-trim expected)))
+   (line-trim (with-out-str (instr actual)))
+   (line-trim expected)))
 

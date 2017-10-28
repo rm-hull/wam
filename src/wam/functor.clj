@@ -26,7 +26,7 @@
   (:require [clojure.string :refer [split]]))
 
 (defn ^:private split-symbol [functor]
-  (-> functor clojure.core/name ( split #"\|")))
+  (-> functor clojure.core/name (split #"\|")))
 
 (defn name
   "Extract the name of a functor, either given as a symbol or a wam.grammar.Functor"
@@ -39,7 +39,7 @@
   "Determine the arity given a functor (as either a symbol or a
    wam.grammar.Functor) representation"
   (memoize
-    (fn [functor]
-      (if (symbol? functor)
-        (-> functor split-symbol second (Integer/parseInt))
-        (:arg-count functor)))))
+   (fn [functor]
+     (if (symbol? functor)
+       (-> functor split-symbol second (Integer/parseInt))
+       (:arg-count functor)))))

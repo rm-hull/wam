@@ -24,9 +24,9 @@
 (ns wam.anciliary-test
   (:refer-clojure :exclude [deref])
   (:require
-    [clojure.test :refer :all]
-    [wam.store :as s]
-    [wam.anciliary :refer :all]))
+   [clojure.test :refer :all]
+   [wam.store :as s]
+   [wam.anciliary :refer :all]))
 
 (deftest check-ref?
   (testing "ref?"
@@ -65,15 +65,15 @@
 (deftest check-deref
   (testing "deref follow refs"
     (let [ctx (->
-                (s/make-context)
-                (s/set-store 0 ['REF 2])
-                (s/set-store 1 ['REF 3])
-                (s/set-store 2 ['REF 1])
-                (s/set-store 3 ['REF 3])
-                (s/set-store 4 ['STR 5])
-                (s/set-store 5 'f|2)
-                (s/set-store 6 ['REF 3])
-                (s/set-register 'X3 ['REF 4]))]
+               (s/make-context)
+               (s/set-store 0 ['REF 2])
+               (s/set-store 1 ['REF 3])
+               (s/set-store 2 ['REF 1])
+               (s/set-store 3 ['REF 3])
+               (s/set-store 4 ['STR 5])
+               (s/set-store 5 'f|2)
+               (s/set-store 6 ['REF 3])
+               (s/set-register 'X3 ['REF 4]))]
       (is (= (deref ctx 0) 3))
       (is (= (deref ctx 1) 3))
       (is (= (deref ctx 2) 3))
@@ -82,5 +82,4 @@
       (is (= (deref ctx 5) 5))
       (is (= (deref ctx 6) 3))
       (is (= (deref ctx 'X3) 4)))))
-
 

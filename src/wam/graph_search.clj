@@ -53,8 +53,8 @@
   (if (empty? coll)
     queue
     (recur
-      (conj queue (first coll))
-      (rest coll))))
+     (conj queue (first coll))
+     (rest coll))))
 
 (defn queue
   ([] clojure.lang.PersistentQueue/EMPTY)

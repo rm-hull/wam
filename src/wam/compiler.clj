@@ -22,21 +22,21 @@
 
 (ns wam.compiler
   (:require
-    [clojure.string :as s]
-    [clojure.set :refer [union]]
-    [jasentaa.parser :refer [parse-all]]
-    [wam.instruction-set :refer :all]
-    [wam.store :refer [friendly]]
-    [wam.grammar :as g]
-    [wam.graph-search :refer :all]))
+   [clojure.string :as s]
+   [clojure.set :refer [union]]
+   [jasentaa.parser :refer [parse-all]]
+   [wam.instruction-set :refer :all]
+   [wam.store :refer [friendly]]
+   [wam.grammar :as g]
+   [wam.graph-search :refer :all]))
 
 (defn register-names
   "Generates an infinite incrementing sequence of register symbols,
    e.g. X1, X2, X3, X4 ..."
   [prefix]
   (->>
-    (iterate inc 1)
-    (map #(symbol (str prefix %)))))
+   (iterate inc 1)
+   (map #(symbol (str prefix %)))))
 
 (defn register-allocation
   "Variable registers are allocated to a term on a least available index basis
@@ -59,8 +59,8 @@
    register,"
   [term]
   (zipmap
-    (bfs term)
-    (register-names 'X)))
+   (bfs term)
+   (register-names 'X)))
 
 (def query-builder
   {:structure-walker
@@ -79,47 +79,46 @@
 
          :else nil)))})
 
-
 (def program-builder
   {:structure-walker
-    dfs-pre-order
+   dfs-pre-order
 
    :instruction-builder
    (fn [term register seen? arg?]
-       (cond
-         (instance? wam.grammar.Structure term)
-         (if arg?
-           (list unify-variable register)
-           (list get-structure (:functor term) register))
+     (cond
+       (instance? wam.grammar.Structure term)
+       (if arg?
+         (list unify-variable register)
+         (list get-structure (:functor term) register))
 
-         (instance? wam.grammar.Variable term)
-         (if (seen? term)
-           (list unify-value register)
-           (list unify-variable register))
+       (instance? wam.grammar.Variable term)
+       (if (seen? term)
+         (list unify-value register)
+         (list unify-variable register))
 
-         :else nil))})
+       :else nil))})
 
 (defn compile-structure
   [instruction-builder structure register-allocation seen?]
   (loop [args (:args structure)
          seen? seen?
          result [(instruction-builder
-                    structure
-                    (register-allocation structure)
-                    seen?
-                    false)]]
+                  structure
+                  (register-allocation structure)
+                  seen?
+                  false)]]
     (if (empty? args)
       result
       (recur
-        (rest args)
-        (conj seen? (first args))
-        (conj
-          result
-          (instruction-builder
-            (first args)
-            (register-allocation (first args))
-            seen?
-            true))))))
+       (rest args)
+       (conj seen? (first args))
+       (conj
+        result
+        (instruction-builder
+         (first args)
+         (register-allocation (first args))
+         seen?
+         true))))))
 
 (defn emit-instructions
   "Constructs a sequence of instructions (missing the context argument)
@@ -138,21 +137,21 @@
         result
         (let [structure (first structures)]
           (recur
-            (rest structures)
-            (conj (union seen? (set (:args structure))) structure)
-            (concat
-              result
-              (compile-structure
-                instruction-builder
-                structure
-                register-allocation
-                seen?))))))))
+           (rest structures)
+           (conj (union seen? (set (:args structure))) structure)
+           (concat
+            result
+            (compile-structure
+             instruction-builder
+             structure
+             register-allocation
+             seen?))))))))
 
 (defn assoc-variables [ctx register-allocation]
   (->>
-    register-allocation
-    (filter #(instance? wam.grammar.Variable (first %)))
-    (update ctx :variables concat)))
+   register-allocation
+   (filter #(instance? wam.grammar.Variable (first %)))
+   (update ctx :variables concat)))
 
 (defn single-step
   "Execute an instruction with respect to the supplied context, if
@@ -179,14 +178,14 @@
 
 (defn query [ctx expression]
   (let [executor (->>
-                   expression
-                   (parse-all g/structure)
-                   (compile-term query-builder))]
+                  expression
+                  (parse-all g/structure)
+                  (compile-term query-builder))]
     (executor ctx)))
 
 (defn program [ctx expression]
   (let [executor (->>
-                   expression
-                   (parse-all g/structure)
-                   (compile-term program-builder))]
+                  expression
+                  (parse-all g/structure)
+                  (compile-term program-builder))]
     (executor ctx)))

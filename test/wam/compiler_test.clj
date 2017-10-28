@@ -23,19 +23,19 @@
 
 (ns wam.compiler-test
   (:require
-    [clojure.test :refer :all]
-    [jasentaa.parser :refer [parse-all]]
-    [wam.assert-helpers :refer :all]
-    [wam.anciliary :refer [unify resolve-struct]]
-    [wam.compiler :refer :all]
-    [wam.instruction-set :refer :all]
-    [wam.grammar :refer [structure]]
-    [wam.store :as s]))
+   [clojure.test :refer :all]
+   [jasentaa.parser :refer [parse-all]]
+   [wam.assert-helpers :refer :all]
+   [wam.anciliary :refer [unify resolve-struct]]
+   [wam.compiler :refer :all]
+   [wam.instruction-set :refer :all]
+   [wam.grammar :refer [structure]]
+   [wam.store :as s]))
 
 (deftest check-register-allocation
   (testing "Register allocation"
     (is (tbl= (register-allocation (parse-all structure "p(Z, h(Z, W), f(W))"))
-      "+------------------+-------+
+              "+------------------+-------+
        | key              | value |
        +------------------+-------+
        | p(Z h(Z W) f(W)) | X1    |
@@ -46,7 +46,7 @@
        +------------------+-------+"))
 
     (is (tbl= (register-allocation (parse-all structure "p(f(X), h(Y, f(a)), Y)"))
-      "+---------------------+-------+
+              "+---------------------+-------+
        | key                 | value |
        +---------------------+-------+
        | p(f(X) h(Y f(a)) Y) | X1    |
@@ -59,7 +59,7 @@
        +---------------------+-------+"))
 
     (is (tbl= (register-allocation (parse-all structure "f(X, g(X,a))"))
-      "+-------------+-------+
+              "+-------------+-------+
        | key         | value |
        +-------------+-------+
        | f(X g(X a)) | X1    |
@@ -73,7 +73,7 @@
     (let [term (parse-all structure "f(X, g(X,a))")
           register-allocation (register-allocation term)]
       (is (instr= (emit-instructions query-builder term register-allocation)
-        "+---------------+------+------+
+                  "+---------------+------+------+
          | instr         | arg1 | arg2 |
          +---------------+------+------+
          | put_structure | a|0  | X4   |
@@ -88,7 +88,7 @@
     (let [term (parse-all structure "p(Z, h(Z, W), f(W))")
           register-allocation (register-allocation term)]
       (is (instr= (emit-instructions query-builder term register-allocation)
-        "+---------------+------+------+
+                  "+---------------+------+------+
          | instr         | arg1 | arg2 |
          +---------------+------+------+
          | put_structure | h|2  | X3   |
@@ -107,7 +107,7 @@
     (let [term (parse-all structure "p(f(X), h(Y, f(a)), Y)")
           register-allocation (register-allocation term)]
       (is (instr= (emit-instructions program-builder term register-allocation)
-        "+----------------+------+------+
+                  "+----------------+------+------+
          | instr          | arg1 | arg2 |
          +----------------+------+------+
          | get_structure  | p|3  | X1   |
@@ -127,11 +127,11 @@
 (deftest check-compile
   (testing "Query compilation"
     (let [q (->>
-              "p(Z, h(Z, W), f(W))"
-              (parse-all structure)
-              (compile-term query-builder))]
+             "p(Z, h(Z, W), f(W))"
+             (parse-all structure)
+             (compile-term query-builder))]
       (is (tbl= (-> (s/make-context) q s/heap)
-        "+------+------------+
+                "+------+------------+
          | key  | value      |
          +------+------------+
          | 1000 | [STR 1001] |
@@ -150,12 +150,12 @@
 
   (testing "Sequential queries"
     (is (tbl=
-          (->
-            (s/make-context)
-            (query "f(X, g(X, a))")
-            (query "f(b, Y)")
-            s/heap)
-          "+------+------------+
+         (->
+          (s/make-context)
+          (query "f(X, g(X, a))")
+          (query "f(b, Y)")
+          s/heap)
+         "+------+------------+
            | key  | value      |
            +------+------------+
            | 1000 | [STR 1001] |
@@ -178,13 +178,13 @@
 
   (testing "Unification"
     (is (tbl=
-          (->
-            (s/make-context)
-            (query "f(X, g(X, a))")
-            (query "f(b, Y)")
-            (unify (heap 6) (heap 12))
-            s/heap )
-          "+------+------------+
+         (->
+          (s/make-context)
+          (query "f(X, g(X, a))")
+          (query "f(b, Y)")
+          (unify (heap 6) (heap 12))
+          s/heap)
+         "+------+------------+
            | key  | value      |
            +------+------------+
            | 1000 | [STR 1001] |
@@ -207,41 +207,41 @@
 
 (deftest ex2.2
   (let [ctx (->
-              (s/make-context)
-              (query "f(X, g(X, a))")
-              (query "f(b, Y)")
-              (unify (heap 12) (heap 6)))]
+             (s/make-context)
+             (query "f(X, g(X, a))")
+             (query "f(b, Y)")
+             (unify (heap 12) (heap 6)))]
     (is (= (resolve-struct ctx (s/register-address 'X2)) "b"))
     (is (= (resolve-struct ctx (s/register-address 'X3)) "g(b, a)"))))
 
 (deftest ex2.3
   (let [ctx (->
-              (s/make-context)
+             (s/make-context)
 
               ; fig 2.3: compiled code for ℒ₀ query ?- p(Z, h(Z, W), f(W)).
-              (put-structure 'h|2, 'X3)
-              (set-variable 'X2)
-              (set-variable 'X5)
-              (put-structure 'f|1, 'X4)
-              (set-value 'X5)
-              (put-structure 'p|3, 'X1)
-              (set-value 'X2)
-              (set-value 'X3)
-              (set-value 'X4)
+             (put-structure 'h|2, 'X3)
+             (set-variable 'X2)
+             (set-variable 'X5)
+             (put-structure 'f|1, 'X4)
+             (set-value 'X5)
+             (put-structure 'p|3, 'X1)
+             (set-value 'X2)
+             (set-value 'X3)
+             (set-value 'X4)
 
               ; fig 2.4: compiled code for ℒ₀ query ?- p(f(X), h(Y, f(a)), Y).
-              (get-structure 'p|3, 'X1)
-              (unify-variable 'X2)
-              (unify-variable 'X3)
-              (unify-variable 'X4)
-              (get-structure 'f|1, 'X2)
-              (unify-variable 'X5)
-              (get-structure 'h|2, 'X3)
-              (unify-value 'X4)
-              (unify-variable 'X6)
-              (get-structure 'f|1, 'X6)
-              (unify-variable 'X7)
-              (get-structure 'a|0, 'X7))
+             (get-structure 'p|3, 'X1)
+             (unify-variable 'X2)
+             (unify-variable 'X3)
+             (unify-variable 'X4)
+             (get-structure 'f|1, 'X2)
+             (unify-variable 'X5)
+             (get-structure 'h|2, 'X3)
+             (unify-value 'X4)
+             (unify-variable 'X6)
+             (get-structure 'f|1, 'X6)
+             (unify-variable 'X7)
+             (get-structure 'a|0, 'X7))
 
         W (resolve-struct ctx (s/register-address 'X5))
         X (resolve-struct ctx (s/register-address 'X5))
@@ -254,9 +254,9 @@
 
 (deftest ex2.5
   (let [ctx (->
-              (s/make-context)
-              (query "p(Z, h(Z, W), f(W))")
-              (program "p(f(X), h(Y, f(a)), Y)"))
+             (s/make-context)
+             (query "p(Z, h(Z, W), f(W))")
+             (program "p(f(X), h(Y, f(a)), Y)"))
 
         W (resolve-struct ctx (s/register-address 'X5))
         X (resolve-struct ctx (s/register-address 'X5))
@@ -267,18 +267,17 @@
     (is (= Y "f(f(a))"))
     (is (= Z "f(f(a))"))))
 
-
 (defn tee [v func]
   (func v)
   v)
 
 (->
-  (s/make-context)
-  (assoc :trace true)
-  (query "father(R, henry)")
-  (program "father(richard, henry)")
-  s/diag
-  (tee #(println "R" (resolve-struct % 1002))))
+ (s/make-context)
+ (assoc :trace true)
+ (query "father(R, henry)")
+ (program "father(richard, henry)")
+ s/diag
+ (tee #(println "R" (resolve-struct % 1002))))
 
 ; put_structure henry|0, X3
 ; put_structure father|2, X1
@@ -309,12 +308,12 @@
 ; {:fail false, :mode :read, :pointer {:h 8, :s 2, :x 1000}, :store {0 [STR 1], 7 richard|0, 1001 [STR 3], 1 henry|0, 4 [STR 7], 1002 [REF 4], 1003 [STR 1], 6 [STR 7], 3 father|2, 2 [STR 3], 5 [STR 1]}, :trace true, :variables ([R X2])}
 
 (->
-  (s/make-context)
-  (assoc :trace true)
-  (query "father(R, henry)")
-  (program "father(henry, richard)")
-  s/diag
-  (tee #(println "R" (resolve-struct % 1002))))
+ (s/make-context)
+ (assoc :trace true)
+ (query "father(R, henry)")
+ (program "father(henry, richard)")
+ s/diag
+ (tee #(println "R" (resolve-struct % 1002))))
 
 ; put_structure henry|0, X3
 ; put_structure father|2, X1
@@ -345,14 +344,13 @@
 ; {:fail true, :mode :write, :pointer {:h 8, :s 6, :x 1000}, :store {0 [STR 1], 7 henry|0, 1001 [STR 3], 1 henry|0, 4 [STR 7], 1002 [REF 4], 1003 [STR 1], 6 [STR 7], 3 father|2, 2 [STR 3], 5 [STR 1]}, :trace true, :variables ([R X2])}
 
 (->
-  (s/make-context)
-  (assoc :trace true)
-  (query "father(richard, J)")
-  (program "father(W, K)")
-  s/diag
+ (s/make-context)
+ (assoc :trace true)
+ (query "father(richard, J)")
+ (program "father(W, K)")
+ s/diag
   ;(tee #(println "J" (resolve-struct % 1003)))
   ;(tee #(println "K" (resolve-struct % 1003)))
   ;(tee #(println "W" (resolve-struct % 1002)))
-
-  )
+)
 
