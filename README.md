@@ -1,4 +1,9 @@
-# Warren's Abstract Machine [![Build Status](https://travis-ci.org/rm-hull/wam.svg?branch=master)](http://travis-ci.org/rm-hull/wam) [![Coverage Status](https://coveralls.io/repos/github/rm-hull/wam/badge.svg?branch=master)](https://coveralls.io/github/rm-hull/wam?branch=master) [![Dependencies Status](https://jarkeeper.com/rm-hull/wam/status.svg)](https://jarkeeper.com/rm-hull/wam)
+# Warren's Abstract Machine
+
+[![Build Status](https://travis-ci.org/rm-hull/wam.svg?branch=master)](http://travis-ci.org/rm-hull/wam)
+[![Coverage Status](https://coveralls.io/repos/github/rm-hull/wam/badge.svg?branch=master)](https://coveralls.io/github/rm-hull/wam?branch=master)
+[![Dependencies Status](https://jarkeeper.com/rm-hull/wam/status.svg)](https://jarkeeper.com/rm-hull/wam)
+[![Maintenance](https://img.shields.io/maintenance/yes/2017.svg?maxAge=2592000)]()
 
 A gradual WAM implementation in Clojure following Hassan Aït-Kaci's tutorial reconstruction.
 
