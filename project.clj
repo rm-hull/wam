@@ -20,6 +20,7 @@
       :global-vars {*warn-on-reflection* true}
       :plugins [
         [lein-codox "0.10.3"]
+        [lein-cljfmt "0.5.7"]
         [lein-cloverage "1.0.9"]]
       :dependencies [
         [org.clojure/clojure "1.8.0"]]}})
