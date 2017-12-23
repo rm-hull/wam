@@ -5,8 +5,8 @@
     :name "The MIT License (MIT)"
     :url "http://opensource.org/licenses/MIT"}
   :dependencies [
-    [rm-hull/jasentaa "0.2.3"]
-    [rm-hull/table "0.6.4"]]
+    [rm-hull/jasentaa "0.2.4"]
+    [rm-hull/table "0.6.5"]]
   :scm {:url "git@github.com:rm-hull/wam.git"}
   :source-paths ["src"]
   :jar-exclusions [#"(?:^|/).git"]
@@ -14,7 +14,7 @@
     :source-paths ["src"]
     :output-path "doc/api"
     :source-uri "http://github.com/rm-hull/wam/blob/master/{filepath}#L{line}"}
-  :min-lein-version "2.6.1"
+  :min-lein-version "2.7.1"
   :profiles {
     :dev {
       :global-vars {*warn-on-reflection* true}
