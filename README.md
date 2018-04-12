@@ -182,19 +182,19 @@ instructions can be assembled as follows:
 Which returns a list of instructions, which corresponds to Figure 2.3
 in the tutorial:
 ```
-┌────────────────────────────────┬──────┬──────┐
-│ instr                          │ arg1 │ arg2 │
-├────────────────────────────────┼──────┼──────┤
-│ wam.instruction_set$put_str... ╎ h|2  ╎ X3   │
-│ wam.instruction_set$set_var... ╎ X2   ╎      │
-│ wam.instruction_set$set_var... ╎ X5   ╎      │
-│ wam.instruction_set$put_str... ╎ f|1  ╎ X4   │
-│ wam.instruction_set$set_val... ╎ X5   ╎      │
-│ wam.instruction_set$put_str... ╎ p|3  ╎ X1   │
-│ wam.instruction_set$set_val... ╎ X2   ╎      │
-│ wam.instruction_set$set_val... ╎ X3   ╎      │
-│ wam.instruction_set$set_val... ╎ X4   ╎      │
-└────────────────────────────────┴──────┴──────┘
+┌──────────────────────────────────────────────┬──────┬──────┐
+│ instr                                        │ arg1 │ arg2 │
+├──────────────────────────────────────────────┼──────┼──────┤
+│ #function[wam.instruction-set/put-structure] ╎ h|2  ╎ X3   │
+│ #function[wam.instruction-set/set-variable]  ╎ X2   ╎      │
+│ #function[wam.instruction-set/set-variable]  ╎ X5   ╎      │
+│ #function[wam.instruction-set/put-structure] ╎ f|1  ╎ X4   │
+│ #function[wam.instruction-set/set-value]     ╎ X5   ╎      │
+│ #function[wam.instruction-set/put-structure] ╎ p|3  ╎ X1   │
+│ #function[wam.instruction-set/set-value]     ╎ X2   ╎      │
+│ #function[wam.instruction-set/set-value]     ╎ X3   ╎      │
+│ #function[wam.instruction-set/set-value]     ╎ X4   ╎      │
+└──────────────────────────────────────────────┴──────┴──────┘
 ```
 The instructions are not directly executable as yet, as a context
 must be supplied in the first argument to each instruction, but
@@ -265,22 +265,22 @@ are also subtly different. Assuming the same helper methods as before:
 Which returns a list of instructions, which corresponds to Figure 2.4
 in the tutorial:
 ```
-┌────────────────────────────────┬──────┬──────┐
-│ instr                          │ arg1 │ arg2 │
-├────────────────────────────────┼──────┼──────┤
-│ wam.instruction_set$get_str... ╎ p|3  ╎ X1   │
-│ wam.instruction_set$unify_v... ╎ X2   ╎      │
-│ wam.instruction_set$unify_v... ╎ X3   ╎      │
-│ wam.instruction_set$unify_v... ╎ X4   ╎      │
-│ wam.instruction_set$get_str... ╎ f|1  ╎ X2   │
-│ wam.instruction_set$unify_v... ╎ X5   ╎      │
-│ wam.instruction_set$get_str... ╎ h|2  ╎ X3   │
-│ wam.instruction_set$unify_v... ╎ X4   ╎      │
-│ wam.instruction_set$unify_v... ╎ X6   ╎      │
-│ wam.instruction_set$get_str... ╎ f|1  ╎ X6   │
-│ wam.instruction_set$unify_v... ╎ X7   ╎      │
-│ wam.instruction_set$get_str... ╎ a|0  ╎ X7   │
-└────────────────────────────────┴──────┴──────┘
+┌───────────────────────────────────────────────┬──────┬──────┐
+│ instr                                         │ arg1 │ arg2 │
+├───────────────────────────────────────────────┼──────┼──────┤
+│ #function[wam.instruction-set/get-structure]  ╎ p|3  ╎ X1   │
+│ #function[wam.instruction-set/unify-variable] ╎ X2   ╎      │
+│ #function[wam.instruction-set/unify-variable] ╎ X3   ╎      │
+│ #function[wam.instruction-set/unify-variable] ╎ X4   ╎      │
+│ #function[wam.instruction-set/get-structure]  ╎ f|1  ╎ X2   │
+│ #function[wam.instruction-set/unify-variable] ╎ X5   ╎      │
+│ #function[wam.instruction-set/get-structure]  ╎ h|2  ╎ X3   │
+│ #function[wam.instruction-set/unify-value]    ╎ X4   ╎      │
+│ #function[wam.instruction-set/unify-variable] ╎ X6   ╎      │
+│ #function[wam.instruction-set/get-structure]  ╎ f|1  ╎ X6   │
+│ #function[wam.instruction-set/unify-variable] ╎ X7   ╎      │
+│ #function[wam.instruction-set/get-structure]  ╎ a|0  ╎ X7   │
+└───────────────────────────────────────────────┴──────┴──────┘
 ```
 ### Exercise 2.2 (pg. 14)
 
