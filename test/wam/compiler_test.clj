@@ -36,37 +36,37 @@
   (testing "Register allocation"
     (is (tbl= (register-allocation (parse-all structure "p(Z, h(Z, W), f(W))"))
               "+------------------+-------+
-       | key              | value |
-       +------------------+-------+
-       | p(Z h(Z W) f(W)) | X1    |
-       | Z                | X2    |
-       | h(Z W)           | X3    |
-       | f(W)             | X4    |
-       | W                | X5    |
-       +------------------+-------+"))
+               | key              | value |
+               +------------------+-------+
+               | p(Z h(Z W) f(W)) | X1    |
+               | Z                | X2    |
+               | h(Z W)           | X3    |
+               | f(W)             | X4    |
+               | W                | X5    |
+               +------------------+-------+"))
 
     (is (tbl= (register-allocation (parse-all structure "p(f(X), h(Y, f(a)), Y)"))
               "+---------------------+-------+
-       | key                 | value |
-       +---------------------+-------+
-       | p(f(X) h(Y f(a)) Y) | X1    |
-       | f(X)                | X2    |
-       | h(Y f(a))           | X3    |
-       | Y                   | X4    |
-       | X                   | X5    |
-       | f(a)                | X6    |
-       | a                   | X7    |
-       +---------------------+-------+"))
+               | key                 | value |
+               +---------------------+-------+
+               | p(f(X) h(Y f(a)) Y) | X1    |
+               | f(X)                | X2    |
+               | h(Y f(a))           | X3    |
+               | Y                   | X4    |
+               | X                   | X5    |
+               | f(a)                | X6    |
+               | a                   | X7    |
+               +---------------------+-------+"))
 
     (is (tbl= (register-allocation (parse-all structure "f(X, g(X,a))"))
               "+-------------+-------+
-       | key         | value |
-       +-------------+-------+
-       | f(X g(X a)) | X1    |
-       | X           | X2    |
-       | g(X a)      | X3    |
-       | a           | X4    |
-       +-------------+-------+"))))
+               | key         | value |
+               +-------------+-------+
+               | f(X g(X a)) | X1    |
+               | X           | X2    |
+               | g(X a)      | X3    |
+               | a           | X4    |
+               +-------------+-------+"))))
 
 (deftest check-query-builder
   (testing "Query builder"
@@ -74,33 +74,33 @@
           register-allocation (register-allocation term)]
       (is (instr= (emit-instructions query-builder term register-allocation)
                   "+---------------+------+------+
-         | instr         | arg1 | arg2 |
-         +---------------+------+------+
-         | put_structure | a|0  | X4   |
-         | put_structure | g|2  | X3   |
-         | set_variable  | X2   |      |
-         | set_value     | X4   |      |
-         | put_structure | f|2  | X1   |
-         | set_value     | X2   |      |
-         | set_value     | X3   |      |
-         +---------------+------+------+")))
+                   | instr         | arg1 | arg2 |
+                   +---------------+------+------+
+                   | put_structure | a|0  | X4   |
+                   | put_structure | g|2  | X3   |
+                   | set_variable  | X2   |      |
+                   | set_value     | X4   |      |
+                   | put_structure | f|2  | X1   |
+                   | set_value     | X2   |      |
+                   | set_value     | X3   |      |
+                   +---------------+------+------+")))
 
     (let [term (parse-all structure "p(Z, h(Z, W), f(W))")
           register-allocation (register-allocation term)]
       (is (instr= (emit-instructions query-builder term register-allocation)
                   "+---------------+------+------+
-         | instr         | arg1 | arg2 |
-         +---------------+------+------+
-         | put_structure | h|2  | X3   |
-         | set_variable  | X2   |      |
-         | set_variable  | X5   |      |
-         | put_structure | f|1  | X4   |
-         | set_value     | X5   |      |
-         | put_structure | p|3  | X1   |
-         | set_value     | X2   |      |
-         | set_value     | X3   |      |
-         | set_value     | X4   |      |
-         +---------------+------+------+")))))
+                   | instr         | arg1 | arg2 |
+                   +---------------+------+------+
+                   | put_structure | h|2  | X3   |
+                   | set_variable  | X2   |      |
+                   | set_variable  | X5   |      |
+                   | put_structure | f|1  | X4   |
+                   | set_value     | X5   |      |
+                   | put_structure | p|3  | X1   |
+                   | set_value     | X2   |      |
+                   | set_value     | X3   |      |
+                   | set_value     | X4   |      |
+                   +---------------+------+------+")))))
 
 (deftest check-program-builder
   (testing "Program builder"
@@ -108,21 +108,21 @@
           register-allocation (register-allocation term)]
       (is (instr= (emit-instructions program-builder term register-allocation)
                   "+----------------+------+------+
-         | instr          | arg1 | arg2 |
-         +----------------+------+------+
-         | get_structure  | p|3  | X1   |
-         | unify_variable | X2   |      |
-         | unify_variable | X3   |      |
-         | unify_variable | X4   |      |
-         | get_structure  | f|1  | X2   |
-         | unify_variable | X5   |      |
-         | get_structure  | h|2  | X3   |
-         | unify_value    | X4   |      |
-         | unify_variable | X6   |      |
-         | get_structure  | f|1  | X6   |
-         | unify_variable | X7   |      |
-         | get_structure  | a|0  | X7   |
-         +----------------+------+------+")))))
+                   | instr          | arg1 | arg2 |
+                   +----------------+------+------+
+                   | get_structure  | p|3  | X1   |
+                   | unify_variable | X2   |      |
+                   | unify_variable | X3   |      |
+                   | unify_variable | X4   |      |
+                   | get_structure  | f|1  | X2   |
+                   | unify_variable | X5   |      |
+                   | get_structure  | h|2  | X3   |
+                   | unify_value    | X4   |      |
+                   | unify_variable | X6   |      |
+                   | get_structure  | f|1  | X6   |
+                   | unify_variable | X7   |      |
+                   | get_structure  | a|0  | X7   |
+                   +----------------+------+------+")))))
 
 (deftest check-compile
   (testing "Query compilation"
@@ -132,21 +132,21 @@
              (compile-term query-builder))]
       (is (tbl= (-> (s/make-context) q s/heap)
                 "+------+------------+
-         | key  | value      |
-         +------+------------+
-         | 1000 | [STR 1001] |
-         | 1001 | h|2        |
-         | 1002 | [REF 1002] |
-         | 1003 | [REF 1003] |
-         | 1004 | [STR 1005] |
-         | 1005 | f|1        |
-         | 1006 | [REF 1003] |
-         | 1007 | [STR 1008] |
-         | 1008 | p|3        |
-         | 1009 | [REF 1002] |
-         | 1010 | [STR 1001] |
-         | 1011 | [STR 1005] |
-         +------+------------+"))))
+                 | key  | value      |
+                 +------+------------+
+                 | 1000 | [STR 1001] |
+                 | 1001 | h|2        |
+                 | 1002 | [REF 1002] |
+                 | 1003 | [REF 1003] |
+                 | 1004 | [STR 1005] |
+                 | 1005 | f|1        |
+                 | 1006 | [REF 1003] |
+                 | 1007 | [STR 1008] |
+                 | 1008 | p|3        |
+                 | 1009 | [REF 1002] |
+                 | 1010 | [STR 1001] |
+                 | 1011 | [STR 1005] |
+                 +------+------------+"))))
 
   (testing "Sequential queries"
     (is (tbl=
@@ -156,25 +156,25 @@
           (query "f(b, Y)")
           s/heap)
          "+------+------------+
-           | key  | value      |
-           +------+------------+
-           | 1000 | [STR 1001] |
-           | 1001 | a|0        |
-           | 1002 | [STR 1003] |
-           | 1003 | g|2        |
-           | 1004 | [REF 1004] |
-           | 1005 | [STR 1001] |
-           | 1006 | [STR 1007] |
-           | 1007 | f|2        |
-           | 1008 | [REF 1004] |
-           | 1009 | [STR 1003] |
-           | 1010 | [STR 1011] |
-           | 1011 | b|0        |
-           | 1012 | [STR 1013] |
-           | 1013 | f|2        |
-           | 1014 | [STR 1011] |
-           | 1015 | [REF 1015] |
-           +------+------------+")))
+          | key  | value      |
+          +------+------------+
+          | 1000 | [STR 1001] |
+          | 1001 | a|0        |
+          | 1002 | [STR 1003] |
+          | 1003 | g|2        |
+          | 1004 | [REF 1004] |
+          | 1005 | [STR 1001] |
+          | 1006 | [STR 1007] |
+          | 1007 | f|2        |
+          | 1008 | [REF 1004] |
+          | 1009 | [STR 1003] |
+          | 1010 | [STR 1011] |
+          | 1011 | b|0        |
+          | 1012 | [STR 1013] |
+          | 1013 | f|2        |
+          | 1014 | [STR 1011] |
+          | 1015 | [REF 1015] |
+          +------+------------+")))
 
   (testing "Unification"
     (is (tbl=
@@ -185,25 +185,25 @@
           (unify (heap 6) (heap 12))
           s/heap)
          "+------+------------+
-           | key  | value      |
-           +------+------------+
-           | 1000 | [STR 1001] |
-           | 1001 | a|0        |
-           | 1002 | [STR 1003] |
-           | 1003 | g|2        |
-           | 1004 | [STR 1011] |
-           | 1005 | [STR 1001] |
-           | 1006 | [STR 1007] |
-           | 1007 | f|2        |
-           | 1008 | [REF 1004] |
-           | 1009 | [STR 1003] |
-           | 1010 | [STR 1011] |
-           | 1011 | b|0        |
-           | 1012 | [STR 1013] |
-           | 1013 | f|2        |
-           | 1014 | [STR 1011] |
-           | 1015 | [STR 1003] |
-           +------+------------+"))))
+          | key  | value      |
+          +------+------------+
+          | 1000 | [STR 1001] |
+          | 1001 | a|0        |
+          | 1002 | [STR 1003] |
+          | 1003 | g|2        |
+          | 1004 | [STR 1011] |
+          | 1005 | [STR 1001] |
+          | 1006 | [STR 1007] |
+          | 1007 | f|2        |
+          | 1008 | [REF 1004] |
+          | 1009 | [STR 1003] |
+          | 1010 | [STR 1011] |
+          | 1011 | b|0        |
+          | 1012 | [STR 1013] |
+          | 1013 | f|2        |
+          | 1014 | [STR 1011] |
+          | 1015 | [STR 1003] |
+          +------+------------+"))))
 
 (deftest ex2.2
   (let [ctx (->
