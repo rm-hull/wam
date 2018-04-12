@@ -62,26 +62,26 @@ See [ℳ₀ machine instructions](https://github.com/rm-hull/wam/blob/L0/src/wam
     (set-value 'X3)
     (set-value 'X4)
     heap
-    table)
+    (table :style :unicode))
 ```
 Produces:
 ```
-+-----+---------+
-| key | value   |
-+-----+---------+
-| 0   | [STR 1] |
-| 1   | h|2     |
-| 2   | [REF 2] |
-| 3   | [REF 3] |
-| 4   | [STR 5] |
-| 5   | f|1     |
-| 6   | [REF 3] |
-| 7   | [STR 8] |
-| 8   | p|3     |
-| 9   | [REF 2] |
-| 10  | [STR 1] |
-| 11  | [STR 5] |
-+-----+---------+
+┌──────┬────────────┐
+│ key  │ value      │
+├──────┼────────────┤
+│ 1000 ╎ [STR 1001] │
+│ 1001 ╎ h|2        │
+│ 1002 ╎ [REF 1002] │
+│ 1003 ╎ [REF 1003] │
+│ 1004 ╎ [STR 1005] │
+│ 1005 ╎ f|1        │
+│ 1006 ╎ [REF 1003] │
+│ 1007 ╎ [STR 1008] │
+│ 1008 ╎ p|3        │
+│ 1009 ╎ [REF 1002] │
+│ 1010 ╎ [STR 1001] │
+│ 1011 ╎ [STR 1005] │
+└──────┴────────────┘
 ```
 
 ### EBNF ℒ₀ Grammar & Parser Combinators
@@ -141,19 +141,19 @@ least available index basis:
 (use 'table.core)
 
 (def term (parse-all structure "p(Z, h(Z, W), f(W))"))
-(table (register-allocation term))
+(table (register-allocation term) :style :unicode)
 ```
 evaluates as:
 ```
-+------------------+-------+
-| key              | value |
-+------------------+-------+
-| p(Z h(Z W) f(W)) | X1    |
-| Z                | X2    |
-| h(Z W)           | X3    |
-| f(W)             | X4    |
-| W                | X5    |
-+------------------+-------+
+┌──────────────────┬───────┐
+│ key              │ value │
+├──────────────────┼───────┤
+│ p(Z h(Z W) f(W)) ╎ X1    │
+│ Z                ╎ X2    │
+│ h(Z W)           ╎ X3    │
+│ f(W)             ╎ X4    │
+│ W                ╎ X5    │
+└──────────────────┴───────┘
 ```
 Inspecting the structures, and indeed it matches as follows:
 
@@ -172,36 +172,29 @@ instructions can be assembled as follows:
 (use 'wam.grammar)
 (use 'table.core)
 
-; Some helper functions to get round limitations in table
-(defn inflate [table]
-  (let [max-cols (reduce max 0 (map count table))]
-    (map #(take max-cols (lazy-cat % (repeat nil))) table)))
-
-(defn headers [& headers]
-  (fn [table] (cons headers table)))
-
-(def table' (comp table inflate (headers "instr" "arg1" "arg2")))
-
-(def term (parse-all structure "p(Z, h(Z, W), f(W))"))
-(table' (emit-instructions query-builder term (register-allocation term)))
+(table
+  (cons
+    ["instr" "arg1" "arg2"]
+    (emit-instructions query-builder term (register-allocation term)))
+  :style :unicode)
 ```
 
 Which returns a list of instructions, which corresponds to Figure 2.3
 in the tutorial:
 ```
-+-------------------------------------------+------+------+
-| instr                                     | arg1 | arg2 |
-+-------------------------------------------+------+------+
-| wam.instruction_set$put_structure@14f613e | h|2  | X3   |
-| wam.instruction_set$set_variable@94c1c0   | X2   |      |
-| wam.instruction_set$set_variable@94c1c0   | X5   |      |
-| wam.instruction_set$put_structure@14f613e | f|1  | X4   |
-| wam.instruction_set$set_value@45176e      | X5   |      |
-| wam.instruction_set$put_structure@14f613e | p|3  | X1   |
-| wam.instruction_set$set_value@45176e      | X2   |      |
-| wam.instruction_set$set_value@45176e      | X3   |      |
-| wam.instruction_set$set_value@45176e      | X4   |      |
-+-------------------------------------------+------+------+
+┌────────────────────────────────┬──────┬──────┐
+│ instr                          │ arg1 │ arg2 │
+├────────────────────────────────┼──────┼──────┤
+│ wam.instruction_set$put_str... ╎ h|2  ╎ X3   │
+│ wam.instruction_set$set_var... ╎ X2   ╎      │
+│ wam.instruction_set$set_var... ╎ X5   ╎      │
+│ wam.instruction_set$put_str... ╎ f|1  ╎ X4   │
+│ wam.instruction_set$set_val... ╎ X5   ╎      │
+│ wam.instruction_set$put_str... ╎ p|3  ╎ X1   │
+│ wam.instruction_set$set_val... ╎ X2   ╎      │
+│ wam.instruction_set$set_val... ╎ X3   ╎      │
+│ wam.instruction_set$set_val... ╎ X4   ╎      │
+└────────────────────────────────┴──────┴──────┘
 ```
 The instructions are not directly executable as yet, as a context
 must be supplied in the first argument to each instruction, but
@@ -213,9 +206,6 @@ that can execute them given a context:
 (use 'wam.grammar)
 (use 'wam.store)
 (use 'table.core)
-
-(def term (parse-all structure "p(Z, h(Z, W), f(W))"))
-(table' (emit-instructions query-builder term (register-allocation term)))
 
 (def context (make-context))
 
@@ -232,22 +222,22 @@ instead generated automatically from executing emitted WAM instructions,
 which were derived from hierarchical data structures, which in turn were
 parsed from a string representation **"p(Z, h(Z, W), f(W))"**.
 ```
-+-----+---------+
-| key | value   |
-+-----+---------+
-| 0   | [STR 1] |
-| 1   | h|2     |
-| 2   | [REF 2] |
-| 3   | [REF 3] |
-| 4   | [STR 5] |
-| 5   | f|1     |
-| 6   | [REF 3] |
-| 7   | [STR 8] |
-| 8   | p|3     |
-| 9   | [REF 2] |
-| 10  | [STR 1] |
-| 11  | [STR 5] |
-+-----+---------+
+┌──────┬────────────┐
+│ key  │ value      │
+├──────┼────────────┤
+│ 1000 ╎ [STR 1001] │
+│ 1001 ╎ h|2        │
+│ 1002 ╎ [REF 1002] │
+│ 1003 ╎ [REF 1003] │
+│ 1004 ╎ [STR 1005] │
+│ 1005 ╎ f|1        │
+│ 1006 ╎ [REF 1003] │
+│ 1007 ╎ [STR 1008] │
+│ 1008 ╎ p|3        │
+│ 1009 ╎ [REF 1002] │
+│ 1010 ╎ [STR 1001] │
+│ 1011 ╎ [STR 1005] │
+└──────┴────────────┘
 ```
 ### Compiling ℒ₀ programs
 
@@ -264,27 +254,33 @@ are also subtly different. Assuming the same helper methods as before:
 ; Assume the same helper functions as before
 
 (def term (parse-all structure "p(f(X), h(Y, f(a)), Y)"))
-(table' (emit-instructions program-builder term (register-allocation term))
+
+(table
+  (cons
+    ["instr" "arg1" "arg2"]
+    (emit-instructions program-builder term (register-allocation term)))
+  :style :unicode)
+
 ```
 Which returns a list of instructions, which corresponds to Figure 2.4
 in the tutorial:
 ```
-+--------------------------------------------+------+------+
-| instr                                      | arg1 | arg2 |
-+--------------------------------------------+------+------+
-| wam.instruction_set$get_structure@1458d55  | p|3  | X1   |
-| wam.instruction_set$unify_variable@1c40c01 | X2   |      |
-| wam.instruction_set$unify_variable@1c40c01 | X3   |      |
-| wam.instruction_set$unify_variable@1c40c01 | X4   |      |
-| wam.instruction_set$get_structure@1458d55  | f|1  | X2   |
-| wam.instruction_set$unify_variable@1c40c01 | X5   |      |
-| wam.instruction_set$get_structure@1458d55  | h|2  | X3   |
-| wam.instruction_set$unify_value@f92e0d     | X4   |      |
-| wam.instruction_set$unify_variable@1c40c01 | X6   |      |
-| wam.instruction_set$get_structure@1458d55  | f|1  | X6   |
-| wam.instruction_set$unify_variable@1c40c01 | X7   |      |
-| wam.instruction_set$get_structure@1458d55  | a|0  | X7   |
-+--------------------------------------------+------+------+
+┌────────────────────────────────┬──────┬──────┐
+│ instr                          │ arg1 │ arg2 │
+├────────────────────────────────┼──────┼──────┤
+│ wam.instruction_set$get_str... ╎ p|3  ╎ X1   │
+│ wam.instruction_set$unify_v... ╎ X2   ╎      │
+│ wam.instruction_set$unify_v... ╎ X3   ╎      │
+│ wam.instruction_set$unify_v... ╎ X4   ╎      │
+│ wam.instruction_set$get_str... ╎ f|1  ╎ X2   │
+│ wam.instruction_set$unify_v... ╎ X5   ╎      │
+│ wam.instruction_set$get_str... ╎ h|2  ╎ X3   │
+│ wam.instruction_set$unify_v... ╎ X4   ╎      │
+│ wam.instruction_set$unify_v... ╎ X6   ╎      │
+│ wam.instruction_set$get_str... ╎ f|1  ╎ X6   │
+│ wam.instruction_set$unify_v... ╎ X7   ╎      │
+│ wam.instruction_set$get_str... ╎ a|0  ╎ X7   │
+└────────────────────────────────┴──────┴──────┘
 ```
 ### Exercise 2.2 (pg. 14)
 
@@ -311,33 +307,37 @@ By applying the query terms to an empty context,
 ```
 Gives the following heap structure. Note that the heap addresses for
 _a<sub>1</sub>_, _a<sub>2</sub>_, _a<sub>x</sub>_ and _a<sub>y</sub>_
-have been annotated at locations 6,12, 8 and 15 respectively.
+have been annotated at locations 1006, 1012, 1008 and 1015 respectively.
 ```
-┌─────┬──────────┐
-│ key │ value    │
-├─────┼──────────┤
-│ 0   ╎ [STR 1]  │
-│ 1   ╎ a|0      │
-│ 2   ╎ [STR 3]  │
-│ 3   ╎ g|2      │
-│ 4   ╎ [REF 4]  │
-│ 5   ╎ [STR 1]  │
-│ 6   ╎ [STR 7]  │   <-- a1
-│ 7   ╎ f|2      │
-│ 8   ╎ [REF 4]  │   <-- aX
-│ 9   ╎ [STR 3]  │
-│ 10  ╎ [STR 11] │
-│ 11  ╎ b|0      │
-│ 12  ╎ [STR 13] │   <-- a2
-│ 13  ╎ f|2      │
-│ 14  ╎ [STR 11] │
-│ 15  ╎ [REF 15] │   <-- aY
-└─────┴──────────┘
+Heap                   Registers             Variables
+------------------------------------------------------------
+┌──────┬────────────┐  ┌─────┬────────────┐  ┌─────┬───────┐
+│ key  │ value      │  │ key │ value      │  │ key │ value │
+├──────┼────────────┤  ├─────┼────────────┤  ├─────┼───────┤
+│ 1000 ╎ [STR 1001] │  │ X1  ╎ [STR 1013] │  │ X   ╎ X2    │
+│ 1001 ╎ a|0        │  │ X2  ╎ [STR 1011] │  │ Y   ╎ X3    │
+│ 1002 ╎ [STR 1003] │  │ X3  ╎ [REF 1015] │  └─────┴───────┘
+│ 1003 ╎ g|2        │  │ X4  ╎ [STR 1001] │
+│ 1004 ╎ [REF 1004] │  └─────┴────────────┘
+│ 1005 ╎ [STR 1001] │
+│ 1006 ╎ [STR 1007] │    ← a1
+│ 1007 ╎ f|2        │
+│ 1008 ╎ [REF 1004] │    ← aX
+│ 1009 ╎ [STR 1003] │
+│ 1010 ╎ [STR 1011] │
+│ 1011 ╎ b|0        │
+│ 1012 ╎ [STR 1013] │    ← a2
+│ 1013 ╎ f|2        │
+│ 1014 ╎ [STR 1011] │
+│ 1015 ╎ [REF 1015] │    ← aY
+└──────┴────────────┘
 ```
 Now, calling _unify(a<sub>1</sub>, a<sub>2</sub>)_, the changed context store
 is displayed below.
 
 ```clojure
+(use 'wam.anciliary)
+
 (defn tee [v func]
   (func v)
   v)
@@ -346,7 +346,7 @@ is displayed below.
   (make-context)
   (query "f(X, g(X, a))")
   (query "f(b, Y)")
-  (unify 12 6)
+  (unify 1012 1006)
   diag
   (tee #(println "X =" (resolve-struct % (register-address 'X2))))
   (tee #(println "Y =" (resolve-struct % (register-address 'X3)))))
@@ -354,36 +354,36 @@ is displayed below.
 Note that the context failed flag returns as false (not shown), indicating
 unification was successful.
 ```
-Heap                Registers           Variables
--------------------------------------------------------
-┌─────┬──────────┐  ┌─────┬──────────┐  ┌─────┬───────┐
-│ key │ value    │  │ key │ value    │  │ key │ value │
-├─────┼──────────┤  ├─────┼──────────┤  ├─────┼───────┤
-│ 0   ╎ [STR 1]  │  │ X1  ╎ [STR 13] │  │ X   ╎ X2    │
-│ 1   ╎ a|0      │  │ X2  ╎ [STR 11] │  │ Y   ╎ X3    │
-│ 2   ╎ [STR 3]  │  │ X3  ╎ [REF 15] │  └─────┴───────┘
-│ 3   ╎ g|2      │  │ X4  ╎ [STR 1]  │
-│ 4   ╎ [STR 11] │  └─────┴──────────┘
-│ 5   ╎ [STR 1]  │
-│ 6   ╎ [STR 7]  │
-│ 7   ╎ f|2      │
-│ 8   ╎ [REF 4]  │
-│ 9   ╎ [STR 3]  │
-│ 10  ╎ [STR 11] │
-│ 11  ╎ b|0      │
-│ 12  ╎ [STR 13] │
-│ 13  ╎ f|2      │
-│ 14  ╎ [STR 11] │
-│ 15  ╎ [STR 3]  │
-└─────┴──────────┘
+Heap                   Registers             Variables
+------------------------------------------------------------
+┌──────┬────────────┐  ┌─────┬────────────┐  ┌─────┬───────┐
+│ key  │ value      │  │ key │ value      │  │ key │ value │
+├──────┼────────────┤  ├─────┼────────────┤  ├─────┼───────┤
+│ 1000 ╎ [STR 1001] │  │ X1  ╎ [STR 1013] │  │ X   ╎ X2    │
+│ 1001 ╎ a|0        │  │ X2  ╎ [STR 1011] │  │ Y   ╎ X3    │
+│ 1002 ╎ [STR 1003] │  │ X3  ╎ [REF 1015] │  └─────┴───────┘
+│ 1003 ╎ g|2        │  │ X4  ╎ [STR 1001] │
+│ 1004 ╎ [STR 1011] │  └─────┴────────────┘
+│ 1005 ╎ [STR 1001] │
+│ 1006 ╎ [STR 1007] │
+│ 1007 ╎ f|2        │
+│ 1008 ╎ [REF 1004] │
+│ 1009 ╎ [STR 1003] │
+│ 1010 ╎ [STR 1011] │
+│ 1011 ╎ b|0        │
+│ 1012 ╎ [STR 1013] │
+│ 1013 ╎ f|2        │
+│ 1014 ╎ [STR 1011] │
+│ 1015 ╎ [STR 1003] │
+└──────┴────────────┘
 
 X = b
 Y = g(b, a)
 ```
 Inspecting the heap, and it becomes clear that:
 
-* dereferencing _a<sub>x</sub>_, `STR 11` → `b|0`, so _X = b_
-* dereferencing _a<sub>y</sub>_, `STR 15` → `STR 3` → `g|2`, so _Y = g(X, a) = g(b, a)_
+* dereferencing _a<sub>x</sub>_, `STR 1011` → `b|0`, so _X = b_
+* dereferencing _a<sub>y</sub>_, `STR 1015` → `STR 1003` → `g|2`, so _Y = g(X, a) = g(b, a)_
 
 ### Exercise 2.3 (pg. 14)
 
@@ -433,32 +433,32 @@ _MGU_ = Most General Unifier
 ```
 Prints:
 ```
-Heap                Registers           Variables
--------------------------------------------------
-┌─────┬──────────┐  ┌─────┬──────────┐  ┌───────┐
-│ key │ value    │  │ key │ value    │  │ value │
-├─────┼──────────┤  ├─────┼──────────┤  ├───────┤
-│ 0   ╎ [STR 1]  │  │ X1  ╎ [STR 8]  │  └───────┘
-│ 1   ╎ h|2      │  │ X2  ╎ [REF 2]  │
-│ 2   ╎ [STR 13] │  │ X3  ╎ [STR 1]  │
-│ 3   ╎ [STR 16] │  │ X4  ╎ [STR 5]  │
-│ 4   ╎ [STR 5]  │  │ X5  ╎ [REF 14] │
-│ 5   ╎ f|1      │  │ X6  ╎ [REF 3]  │
-│ 6   ╎ [REF 3]  │  │ X7  ╎ [REF 17] │
-│ 7   ╎ [STR 8]  │  └─────┴──────────┘
-│ 8   ╎ p|3      │
-│ 9   ╎ [REF 2]  │
-│ 10  ╎ [STR 1]  │
-│ 11  ╎ [STR 5]  │
-│ 12  ╎ [STR 13] │
-│ 13  ╎ f|1      │
-│ 14  ╎ [REF 3]  │
-│ 15  ╎ [STR 16] │
-│ 16  ╎ f|1      │
-│ 17  ╎ [STR 19] │
-│ 18  ╎ [STR 19] │
-│ 19  ╎ a|0      │
-└─────┴──────────┘
+Heap                   Registers             Variables
+------------------------------------------------------
+┌──────┬────────────┐  ┌─────┬────────────┐  ┌───────┐
+│ key  │ value      │  │ key │ value      │  │ value │
+├──────┼────────────┤  ├─────┼────────────┤  ├───────┤
+│ 1000 ╎ [STR 1001] │  │ X1  ╎ [STR 1008] │  └───────┘
+│ 1001 ╎ h|2        │  │ X2  ╎ [REF 1002] │
+│ 1002 ╎ [STR 1013] │  │ X3  ╎ [STR 1001] │
+│ 1003 ╎ [STR 1016] │  │ X4  ╎ [STR 1005] │
+│ 1004 ╎ [STR 1005] │  │ X5  ╎ [REF 1014] │
+│ 1005 ╎ f|1        │  │ X6  ╎ [REF 1003] │
+│ 1006 ╎ [REF 1003] │  │ X7  ╎ [REF 1017] │
+│ 1007 ╎ [STR 1008] │  └─────┴────────────┘
+│ 1008 ╎ p|3        │
+│ 1009 ╎ [REF 1002] │
+│ 1010 ╎ [STR 1001] │
+│ 1011 ╎ [STR 1005] │
+│ 1012 ╎ [STR 1013] │
+│ 1013 ╎ f|1        │
+│ 1014 ╎ [REF 1003] │
+│ 1015 ╎ [STR 1016] │
+│ 1016 ╎ f|1        │
+│ 1017 ╎ [STR 1019] │
+│ 1018 ╎ [STR 1019] │
+│ 1019 ╎ a|0        │
+└──────┴────────────┘
 
 W = f(a)
 X = f(a)
@@ -478,7 +478,7 @@ Setting the execution trace to `true` and running the two terms:
   (make-context)
   (assoc :trace true)
   (query "p(Z, h(Z, W), f(W))")
-  (program "p(f(X), h(Y, f(a)), Y)")
+  (program "p(f(X), h(Y, f(a)), Y)"))
 ```
 
 Gives the following instruction list:
@@ -527,34 +527,34 @@ Executing:
   (tee #(println "Y =" (resolve-struct % (register-address 'X4))))
   (tee #(println "Z =" (resolve-struct % (register-address 'X2)))))
 ```
-This gives the same output as [exercise 2.3](#exercise-23-pg-14) (albeit with extra register allcoations):
+This gives the same output as [exercise 2.3](#exercise-23-pg-14) (albeit with extra register allocations):
 ```
-Heap                Registers           Variables
--------------------------------------------------------
-┌─────┬──────────┐  ┌─────┬──────────┐  ┌─────┬───────┐
-│ key │ value    │  │ key │ value    │  │ key │ value │
-├─────┼──────────┤  ├─────┼──────────┤  ├─────┼───────┤
-│ 0   ╎ [STR 1]  │  │ X1  ╎ [STR 8]  │  │ W   ╎ X5    │
-│ 1   ╎ h|2      │  │ X2  ╎ [REF 2]  │  │ X   ╎ X5    │
-│ 2   ╎ [STR 13] │  │ X3  ╎ [STR 1]  │  │ Y   ╎ X4    │
-│ 3   ╎ [STR 16] │  │ X4  ╎ [STR 5]  │  │ Z   ╎ X2    │
-│ 4   ╎ [STR 5]  │  │ X5  ╎ [REF 14] │  └─────┴───────┘
-│ 5   ╎ f|1      │  │ X6  ╎ [REF 3]  │
-│ 6   ╎ [REF 3]  │  │ X7  ╎ [REF 17] │
-│ 7   ╎ [STR 8]  │  └─────┴──────────┘
-│ 8   ╎ p|3      │
-│ 9   ╎ [REF 2]  │
-│ 10  ╎ [STR 1]  │
-│ 11  ╎ [STR 5]  │
-│ 12  ╎ [STR 13] │
-│ 13  ╎ f|1      │
-│ 14  ╎ [REF 3]  │
-│ 15  ╎ [STR 16] │
-│ 16  ╎ f|1      │
-│ 17  ╎ [STR 19] │
-│ 18  ╎ [STR 19] │
-│ 19  ╎ a|0      │
-└─────┴──────────┘
+Heap                   Registers             Variables
+------------------------------------------------------------
+┌──────┬────────────┐  ┌─────┬────────────┐  ┌─────┬───────┐
+│ key  │ value      │  │ key │ value      │  │ key │ value │
+├──────┼────────────┤  ├─────┼────────────┤  ├─────┼───────┤
+│ 1000 ╎ [STR 1001] │  │ X1  ╎ [STR 1008] │  │ W   ╎ X5    │
+│ 1001 ╎ h|2        │  │ X2  ╎ [REF 1002] │  │ X   ╎ X5    │
+│ 1002 ╎ [STR 1013] │  │ X3  ╎ [STR 1001] │  │ Y   ╎ X4    │
+│ 1003 ╎ [STR 1016] │  │ X4  ╎ [STR 1005] │  │ Z   ╎ X2    │
+│ 1004 ╎ [STR 1005] │  │ X5  ╎ [REF 1014] │  └─────┴───────┘
+│ 1005 ╎ f|1        │  │ X6  ╎ [REF 1003] │
+│ 1006 ╎ [REF 1003] │  │ X7  ╎ [REF 1017] │
+│ 1007 ╎ [STR 1008] │  └─────┴────────────┘
+│ 1008 ╎ p|3        │
+│ 1009 ╎ [REF 1002] │
+│ 1010 ╎ [STR 1001] │
+│ 1011 ╎ [STR 1005] │
+│ 1012 ╎ [STR 1013] │
+│ 1013 ╎ f|1        │
+│ 1014 ╎ [REF 1003] │
+│ 1015 ╎ [STR 1016] │
+│ 1016 ╎ f|1        │
+│ 1017 ╎ [STR 1019] │
+│ 1018 ╎ [STR 1019] │
+│ 1019 ╎ a|0        │
+└──────┴────────────┘
 
 W = f(a)
 X = f(a)
@@ -574,7 +574,7 @@ Assuming the same imports and initial context as perviously:
 
 ```clojure
 (->
-  (s/make-context)
+  (make-context)
   (put-variable 'X4, 'A1)
   (put-structure 'h|2, 'A2)
   (set-value 'X4)
@@ -586,39 +586,40 @@ Assuming the same imports and initial context as perviously:
 ```
 gives:
 ```
-+------+--------+
-| key | value   |
-+-----+---------+
-| 0   | [REF 0] |
-| 1   | [STR 2] |
-| 2   | h|2     |
-| 3   | [REF 0] |
-| 4   | [REF 4] |
-| 5   | [STR 6] |
-| 6   | f|1     |
-| 7   | [REF 4] |
-+-----+---------+
+┌──────┬────────────┐
+│ key  │ value      │
+├──────┼────────────┤
+│ 1000 ╎ [REF 1000] │
+│ 1001 ╎ [STR 1002] │
+│ 1002 ╎ h|2        │
+│ 1003 ╎ [REF 1000] │
+│ 1004 ╎ [REF 1004] │
+│ 1005 ╎ [STR 1006] │
+│ 1006 ╎ f|1        │
+│ 1007 ╎ [REF 1004] │
+└──────┴────────────┘
 ```
 Apart from the term root, the heap is layed out _similarly_ to that of
 Figure 2.3 as below, albeit with different references:
 ```
-                      +-----+---------+
-+-----+---------+     | key | value   |
-| key | value   |     +-----+---------+
-+-----+---------+     | 0   | [REF 0] |
-| 0   | [STR 1] |     | 1   | [STR 2] |
-| 1   | h|2     |     | 2   | h|2     |
-| 2   | [REF 2] |     | 3   | [REF 0] |
-| 3   | [REF 3] |     | 4   | [REF 4] |
-| 4   | [STR 5] |     | 5   | [STR 6] |
-| 5   | f|1     |     | 6   | f|1     |
-| 6   | [REF 3] |     | 7   | [REF 4] |
-| 7   | [STR 8] |     +-----+---------+
-| 8   | p|3     |
-| 9   | [REF 2] |
-| 10  | [STR 1] |
-| 11  | [STR 5] |
-+-----+---------+
+                         ┌──────┬────────────┐
+┌──────┬────────────┐    │ key  │ value      │
+│ key  │ value      │    ├──────┼────────────┤
+├──────┼────────────┤    │ 1000 ╎ [REF 1000] │
+│ 1000 ╎ [STR 1001] │    │ 1001 ╎ [STR 1002] │
+│ 1001 ╎ h|2        │    │ 1002 ╎ h|2        │
+│ 1002 ╎ [REF 1002] │    │ 1003 ╎ [REF 1000] │
+│ 1003 ╎ [REF 1003] │    │ 1004 ╎ [REF 1004] │
+│ 1004 ╎ [STR 1005] │    │ 1005 ╎ [STR 1006] │
+│ 1005 ╎ f|1        │    │ 1006 ╎ f|1        │
+│ 1006 ╎ [REF 1003] │    │ 1007 ╎ [REF 1004] │
+│ 1007 ╎ [STR 1008] │    └──────┴────────────┘
+│ 1008 ╎ p|3        │
+│ 1009 ╎ [REF 1002] │
+│ 1010 ╎ [STR 1001] │
+│ 1011 ╎ [STR 1005] │
+└──────┴────────────┘
+
 ```
 
 ### Exercise 2.7 (pg. 18)
@@ -631,7 +632,7 @@ Figure 2.3 as below, albeit with different references:
 Defining _p/3_ as:
 
 ```clojure
-(def [p|3
+(def p|3
   (list
     [get-structure 'f|1, 'A1]
     [unify-variable 'X4]
